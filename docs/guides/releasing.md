@@ -2,31 +2,17 @@
 
 ## GitHub Release
 
-The release workflow is triggered by a published GitHub Release or can be started manually from the Actions page. It builds the wheel and sdist, publishes to PyPI with OIDC trusted publishing, and uploads the distributions to the GitHub Release.
+The release-assets workflow runs when a GitHub Release is published and can also be started manually for an existing release tag. It builds the wheel and sdist, then uploads both files to the GitHub Release. This project does not publish to PyPI.
 
-## PyPI trusted publishing
-
-Before publishing the first release, open the [PyPI publishing settings](https://pypi.org/manage/account/publishing/) and create a pending publisher for the project name `pytorch-instance-segmentation-lab`:
-
-- Owner: `Doithoo`
-- Repository name: `pytorch-instance-segmentation-lab`
-- Workflow name: `publish.yml`
-- Environment name: `pypi`
-
-PyPI asks for the workflow filename, not the repository path. The resulting GitHub OIDC claim must match `.github/workflows/publish.yml` in this repository. The GitHub workflow already requests `id-token: write` and uses `environment: pypi`. A `422 invalid-publisher` response means this PyPI-side entry is missing or differs from these values.
-
-After saving the pending publisher, rerun the failed workflow:
+For a manual run, open the workflow in GitHub Actions and provide the existing release tag in the `tag` input:
 
 ```bash
-gh run rerun 32578729496 --failed
-# Or run the Publish workflow manually from GitHub Actions.
+gh workflow run release.yml -f tag=v0.2.0
 ```
 
-The failed `v0.2.0` attempt stopped before uploading to PyPI. The GitHub Release assets are already present; a successful rerun will publish the wheel and sdist and upload the distributions again with `--clobber`.
+For a new release, create the tag, push it, and publish the GitHub Release. The published-release event supplies the tag automatically. The workflow uses only `contents: write`; it does not create a PyPI environment or request OIDC publishing permissions.
 
-For a new release, create the tag, push it, and publish the GitHub Release. Do not put a PyPI API token in repository secrets when trusted publishing is available.
-
-## Release assets
+## Release Assets
 
 For the protocol-v2 baseline, upload the wheel, sdist, model card, trusted `best.pt`, and a checksum file. Verify the checkpoint before upload and verify all downloaded assets after upload:
 
@@ -35,3 +21,11 @@ sha256sum -c SHA256SUMS-v0.2.0.txt
 ```
 
 The checkpoint is a trusted pickle-based PyTorch artifact. Publish its SHA-256 beside the file and keep the model card with intended-use and limitation details.
+
+The package can still be built locally without publishing it:
+
+```bash
+uv sync --locked --extra dev
+uv build
+uv run twine check dist/*
+```
