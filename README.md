@@ -91,4 +91,4 @@ uv run python scripts/build_kaggle_runner.py --check
 uv run python -m build && uv run twine check dist/*
 ```
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [changelog](CHANGELOG.md) before contributing. PyTorch `.pt` checkpoints and external factories are trusted-code inputs; never load them from an unverified source.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before contributing. PyTorch `.pt` checkpoints and external factories are trusted-code inputs; never load them from an unverified source.

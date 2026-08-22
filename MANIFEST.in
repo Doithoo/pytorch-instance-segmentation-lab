@@ -1,5 +1,4 @@
 include LICENSE
-include CHANGELOG.md
 include CITATION.cff
 include CODE_OF_CONDUCT.md
 include SECURITY.md

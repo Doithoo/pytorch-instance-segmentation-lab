@@ -1,6 +1,6 @@
 # 贡献指南
 
-使用 Python 3.10-3.12 和 `uv`。遵守[行为准则](CODE_OF_CONDUCT.md)，用户可见改动应写入 `CHANGELOG.md`，并保持中英文契约文档一致。
+使用 Python 3.10-3.12 和 `uv`。遵守[行为准则](CODE_OF_CONDUCT.md)，在相关 README 或指南中记录用户可见改动，并保持中英文契约文档一致。
 
 提交 PR 前运行：
 

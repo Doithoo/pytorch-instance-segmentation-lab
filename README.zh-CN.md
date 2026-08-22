@@ -91,4 +91,4 @@ uv run python scripts/build_kaggle_runner.py --check
 uv run python -m build && uv run twine check dist/*
 ```
 
-贡献前阅读 [CONTRIBUTING.zh-CN.md](CONTRIBUTING.zh-CN.md)、[SECURITY.md](SECURITY.md)与[变更日志](CHANGELOG.md)。PyTorch `.pt` checkpoint 和外部 factory 都属于可信代码输入，不要加载来源未经验证的文件。
+贡献前阅读 [CONTRIBUTING.zh-CN.md](CONTRIBUTING.zh-CN.md) 与 [SECURITY.md](SECURITY.md)。PyTorch `.pt` checkpoint 和外部 factory 都属于可信代码输入，不要加载来源未经验证的文件。
