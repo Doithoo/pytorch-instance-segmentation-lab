@@ -1,6 +1,6 @@
 # Contributing
 
-Use Python 3.10-3.12 and `uv`. Follow the [Code of Conduct](CODE_OF_CONDUCT.md), document user-visible behavior in the relevant README or guide, and keep English/Chinese contract documentation aligned.
+Use Python 3.10-3.12 and `uv`. Document user-visible behavior in the relevant README or guide, and keep English/Chinese contract documentation aligned.
 
 Before opening a pull request, run:
 
