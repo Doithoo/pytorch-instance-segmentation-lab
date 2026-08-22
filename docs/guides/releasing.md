@@ -6,14 +6,14 @@ The release workflow is triggered by a published GitHub Release or can be starte
 
 ## PyPI trusted publishing
 
-Before publishing the first release, create a pending publisher at PyPI for the project name `pytorch-instance-segmentation-lab`:
+Before publishing the first release, open the [PyPI publishing settings](https://pypi.org/manage/account/publishing/) and create a pending publisher for the project name `pytorch-instance-segmentation-lab`:
 
 - Owner: `Doithoo`
-- Repository: `pytorch-instance-segmentation-lab`
-- Workflow: `.github/workflows/publish.yml`
-- Environment: `pypi`
+- Repository name: `pytorch-instance-segmentation-lab`
+- Workflow name: `publish.yml`
+- Environment name: `pypi`
 
-The GitHub workflow already requests `id-token: write` and uses `environment: pypi`. The OIDC claims must match the repository, exact workflow path, and environment. A `422 invalid-publisher` response means this PyPI-side entry is missing or differs from those values.
+PyPI asks for the workflow filename, not the repository path. The resulting GitHub OIDC claim must match `.github/workflows/publish.yml` in this repository. The GitHub workflow already requests `id-token: write` and uses `environment: pypi`. A `422 invalid-publisher` response means this PyPI-side entry is missing or differs from these values.
 
 After saving the pending publisher, rerun the failed workflow:
 
@@ -21,6 +21,8 @@ After saving the pending publisher, rerun the failed workflow:
 gh run rerun 32578729496 --failed
 # Or run the Publish workflow manually from GitHub Actions.
 ```
+
+The failed `v0.2.0` attempt stopped before uploading to PyPI. The GitHub Release assets are already present; a successful rerun will publish the wheel and sdist and upload the distributions again with `--clobber`.
 
 For a new release, create the tag, push it, and publish the GitHub Release. Do not put a PyPI API token in repository secrets when trusted publishing is available.
 

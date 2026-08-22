@@ -6,14 +6,14 @@
 
 ## PyPI Trusted Publishing
 
-首次发布前，请在 PyPI 为项目 `pytorch-instance-segmentation-lab` 创建 pending publisher：
+首次发布前，请打开 [PyPI publishing settings](https://pypi.org/manage/account/publishing/)，为项目 `pytorch-instance-segmentation-lab` 创建 pending publisher：
 
 - Owner：`Doithoo`
-- Repository：`pytorch-instance-segmentation-lab`
-- Workflow：`.github/workflows/publish.yml`
-- Environment：`pypi`
+- Repository name：`pytorch-instance-segmentation-lab`
+- Workflow name：`publish.yml`
+- Environment name：`pypi`
 
-GitHub workflow 已请求 `id-token: write` 并设置 `environment: pypi`。OIDC claims 必须与仓库、workflow 精确路径和 environment 完全一致。若收到 `422 invalid-publisher`，说明 PyPI 侧条目缺失或配置不一致。
+PyPI 表单要求填写 workflow 文件名，而不是仓库路径。生成的 GitHub OIDC claim 必须与本仓库中的 `.github/workflows/publish.yml` 匹配。GitHub workflow 已请求 `id-token: write` 并设置 `environment: pypi`。若收到 `422 invalid-publisher`，说明 PyPI 侧条目缺失或与上述值不一致。
 
 保存 pending publisher 后重新运行失败的 workflow：
 
@@ -21,6 +21,8 @@ GitHub workflow 已请求 `id-token: write` 并设置 `environment: pypi`。OIDC
 gh run rerun 32578729496 --failed
 # 或从 GitHub Actions 手动运行 Publish workflow。
 ```
+
+`v0.2.0` 的失败尝试在上传 PyPI 前就已停止。GitHub Release 资产已经存在；成功重跑后会发布 wheel 和 sdist，并通过 `--clobber` 重新上传分发包。
 
 trusted publishing 可用时不要把 PyPI API token 放入仓库 secrets。
 
