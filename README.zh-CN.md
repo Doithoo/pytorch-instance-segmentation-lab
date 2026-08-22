@@ -1,4 +1,4 @@
-# PyTorch 实例分割学习实验室
+# PyTorch 实例分割
 
 [![CI](https://github.com/Doithoo/pytorch-instance-segmentation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Doithoo/pytorch-instance-segmentation-lab/actions/workflows/ci.yml)
 [![Python 3.10-3.12](https://img.shields.io/badge/python-3.10--3.12-3776AB)](pyproject.toml)
@@ -6,7 +6,7 @@
 
 [English](README.md)
 
-这是一个面向学习、强调可复现性的 PyTorch 实例分割实验室，覆盖独立 mask/box/label、训练、COCO 评估、错误分析和 checkpoint 推理。内置 Penn-Fudan、COCO polygon/RLE 数据 provider，以及 torchvision Mask R-CNN 模型。
+可复现的 PyTorch 实例分割实现，包含 Penn-Fudan 与 COCO polygon/RLE 数据 provider、torchvision Mask R-CNN 模型、训练、评估、错误分析和 checkpoint 推理。
 
 ![Penn-Fudan 数据与实例](docs/recorded-run/assets/dataset-preview.png)
 
@@ -14,15 +14,32 @@
 下载/准备 -> 校验 -> 检查 -> dry-run -> 训练 -> 评估 -> 对比/推理
 ```
 
-## 基线状态
+## Kaggle 已完成运行
 
-评估协议 v2 保留完整预测置信度排序，以计算标准 COCO 风格 AP。Penn-Fudan 使用固定、按来源分层的 136/17/17 划分，Fudan 与 Penn 两个域都会进入 train、valid 和 test。
+协议 v2 已在 [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) 的 Tesla T4 上实际执行，使用仓库提交的按来源分层 manifests 和 20 个训练 epoch。运行完成时间为 `2026-08-22T12:19:00Z`。
 
-协议 v2 的 20 epoch T4 训练已完成。第 10 轮验证 mask AP 为 `0.766694`；保留完整置信度排序后，固定 test split 的 mask AP 为 `0.756093`、bbox AP 为 `0.846439`。完整信息见[可审计训练记录](docs/recorded-run/README.zh-CN.md)。
+| 指标 | 结果 |
+|---|---:|
+| 最佳验证 mask AP（第 10 轮） | **0.766694** |
+| Test mask AP / AP50 / AP75 | **0.756093** / 1.000000 / 0.855337 |
+| Test bbox AP / AP50 / AP75 | **0.846439** / 1.000000 / 0.935175 |
+| Test 图片 / 目标 | 17 / 40 |
+| 训练 / 评估 / 总耗时 | 537.431s / 4.609s / 585.735s |
 
-已被替代的 score-filtered、连续切分结果保留在 [`legacy-v1`](docs/recorded-run/legacy-v1/)，不能与协议 v2 直接比较。
+评估保留完整置信度排序（`metric_score_floor=0.0`）。固定 dataset identity 为 `64bfbd3d...b48d8`，最佳 checkpoint SHA-256 为 `1c28ed12...b3d57`。完整报告、provenance、可视化和模型卡见[训练记录](docs/recorded-run/README.zh-CN.md)。此前 score-filtered 的结果保留在 [`legacy-v1`](docs/recorded-run/legacy-v1/)，不能与协议 v2 直接比较。
 
-## 本地开始
+## 项目范围
+
+仓库提供：
+
+- 独立 box、label 和二值 mask 的实例 target 契约。
+- 固定按来源分层的 Penn-Fudan `136/17/17` manifests。
+- 支持 polygon、RLE、多类别、crowd 和空图片的 COCO instance JSON 准备流程。
+- ResNet50-FPN v1/v2 与 MobileNetV3-Large Mask R-CNN 模型构造器。
+- 训练、验证集选模、选模后的 test 评估、checkpoint 恢复和单图推理。
+- 机器可读指标、逐图错误报告、排序后的最差样本图和运行 provenance。
+
+## 本地复现
 
 ```bash
 uv sync --locked --extra dev
@@ -33,21 +50,17 @@ uv run instance-segment verify-data
 uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
 ```
 
-实例 target 是独立的 `boxes`、`labels` 和 bool `masks` 列表，不是单张语义类别图。`best.pt` 只由验证集 `mask_map` 选择，test 始终在选模结束后单独评估。
+完整 GPU 复现使用 [Kaggle runner](docs/guides/kaggle.zh-CN.md)。本次协议 v2 的精确提交 runner 是 [run_kaggle-v2.py](docs/recorded-run/kaggle/run_kaggle-v2.py)。
 
-## 内置工作流
+## 命令
 
-- `instance-segment init-config --list`：发现 wheel 中安装的配置模板。
-- `instance-segment prepare-coco ...`：准备多类别 COCO polygon/RLE 数据，也支持无实例图片。
-- `instance-segment list-models`：查看 ResNet50-FPN v1/v2 与 MobileNetV3-Large Mask R-CNN。
-- `instance-segment evaluate`：一次推理生成 bbox/mask 指标、逐类 CSV、逐图错误与最差样本图。
-- `instance-segment compare-runs`：默认只比较数据和评估协议兼容的运行。
+- `instance-segment init-config --list`：列出已安装的配置模板。
+- `instance-segment prepare-coco ...`：准备 COCO polygon/RLE 数据。
+- `instance-segment list-models`：列出已注册的 Mask R-CNN 变体。
+- `instance-segment evaluate`：生成指标、逐类 CSV、逐图错误和排序后的最差样本。
+- `instance-segment compare-runs`：比较协议兼容的已完成运行。
 
-进一步阅读[教程](docs/tutorial/README.zh-CN.md)、[指南](docs/guides/)、[参考](docs/reference/)和[协议 v2 决策](docs/architecture/0002-evaluation-and-splits.zh-CN.md)。
-
-## Kaggle 完整训练
-
-生成的 runner 内嵌精确源码归档和固定 manifests，检查 T4 或更新 GPU，下载带 checksum 的数据与权重，输出 JSON heartbeat，并记录完整 provenance。操作见 [Kaggle 指南](docs/guides/kaggle.zh-CN.md)。完整协议 v2 运行必须同时发布 checkpoint、源码 hash 和评估报告。
+配置与使用说明位于[文档导航](docs/README.zh-CN.md)、[指南](docs/guides/)、[参考](docs/reference/)和[架构决策](docs/architecture/)。
 
 ## 开发
 

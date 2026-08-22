@@ -1,4 +1,4 @@
-# 教程
+# 使用文档
 
 1. [基础概念](00-basics.zh-CN.md)
 2. [环境](01-environment.zh-CN.md)

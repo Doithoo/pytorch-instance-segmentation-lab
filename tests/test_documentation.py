@@ -78,7 +78,7 @@ def test_protocol_v2_recorded_run_is_internally_consistent() -> None:
 def test_readme_describes_protocol_v2_and_legacy_baseline() -> None:
     root = Path(__file__).resolve().parents[1]
     readme = (root / "README.md").read_text(encoding="utf-8")
-    assert "20-epoch" in readme
+    assert "20 training epochs" in readme
     assert "136/17/17" in readme
     assert "protocol v2" in readme
     assert "legacy-v1" in readme

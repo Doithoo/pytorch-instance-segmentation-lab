@@ -1,4 +1,4 @@
-# Tutorial
+# Usage Documentation
 
 1. [Basics](00-basics.md)
 2. [Environment](01-environment.md)

@@ -1,19 +1,19 @@
-# ADR-0001：PyTorch 实例分割学习实验室实施规格
+# ADR-0001：PyTorch 实例分割项目实施规格
 
 - 状态：v0.1.0 已实施；评估和数据划分决策由 [ADR 0002](0002-evaluation-and-splits.zh-CN.md) 修订
 - 目标目录：`pytorch-instance-segmentation-lab`
 - 参考项目：`pytorch-object-detection-lab`
-- 项目类型：面向初学者的、可复现的 PyTorch 实例分割学习项目
+- 项目类型：可复现的 PyTorch 实例分割项目
 - 首个可运行数据集：Penn-Fudan Pedestrian
 - 首个主模型：torchvision Mask R-CNN
 - 正式完整训练平台：Kaggle GPU（T4 或更新的兼容 NVIDIA GPU）
-- 语言策略：代码和 CLI 使用英文，教程和关键说明提供中英文版本
+- 语言策略：代码和 CLI 使用英文，关键说明提供中英文版本
 
 ## 1. 目标与边界
 
 ### 1.1 必须实现的目标
 
-项目必须让学习者在不阅读全部源码的情况下完成下面的闭环：
+项目应提供下面的完整运行闭环：
 
 ```text
 download -> prepare -> inspect -> dry-run -> train -> evaluate -> predict
@@ -70,7 +70,7 @@ download -> prepare -> inspect -> dry-run -> train -> evaluate -> predict
 - manifest 固定数据成员。
 - `best.pt` / `last.pt` checkpoint。
 - 单元、集成、CLI 和端到端测试。
-- 英文和中文 README、教程、指南。
+- 英文和中文 README、使用文档、指南。
 - Kaggle runner 内嵌源码快照、GPU preflight、JSON 心跳、完整训练和 recorded-run 产物。
 
 不能直接复用其任务契约：
@@ -136,7 +136,7 @@ pytorch-instance-segmentation-lab/
 │   │   ├── metrics.md / .zh-CN.md
 │   │   ├── model-zoo.md / .zh-CN.md
 │   │   └── penn-fudan.md / .zh-CN.md
-│   ├── tutorial/
+│   ├── tutorial/                       # Usage documentation
 │   │   ├── README.md / .zh-CN.md
 │   │   ├── 00-basics.md / .zh-CN.md
 │   │   ├── 01-environment.md / .zh-CN.md
@@ -393,7 +393,7 @@ targets: list[dict[str, Tensor]]
 
 第一版注册：
 
-1. `maskrcnn_resnet50_fpn`：主教学模型，支持 `weights=none` 或 COCO 权重。
+1. `maskrcnn_resnet50_fpn`：主模型，支持 `weights=none` 或 COCO 权重。
 2. `maskrcnn_resnet50_fpn_v2`：可选对照模型，仅在当前 torchvision 版本可用时注册。
 
 快速单元测试使用 `tests/fixtures/external_models.py` 中遵守同一输入/输出契约的轻量测试替身，不把测试替身注册成面向学习者的模型，也不声称它是 Mask R-CNN。`learning_minimal.yaml --dry-run` 仍须执行真正的 torchvision Mask R-CNN，但通过 batch size 1、小图、单 batch 和不下载权重控制成本。
@@ -597,9 +597,9 @@ artifacts/<run-name>/
 - `instances.json`，含 box、label、score、mask 路径或 RLE。
 - `overlay.png`。
 
-## 10. 教程与 examples 顺序
+## 10. 文档与 examples 组织
 
-examples 必须小而可独立运行，教程再解释它们在完整项目中的位置：
+examples 保持小而可独立运行，文档说明它们在完整项目中的位置：
 
 1. `01_instance_target.py`：手工创建两个实例，打印 boxes/labels/masks/area。
 2. `02_mask_to_instances.py`：把 instance-id mask 解析为多个二值 mask 并画出 bbox。
@@ -607,7 +607,7 @@ examples 必须小而可独立运行，教程再解释它们在完整项目中�
 4. `04_minimal_training_loop.py`：用 synthetic dataset 完成一次 forward/loss/backward/update。
 5. `05_checkpoint_prediction.py`：加载 checkpoint、阈值化 mask、保存 overlay。
 
-教程章节必须覆盖：
+文档章节覆盖：
 
 - 实例分割与语义分割、目标检测的区别。
 - 一个 target 字典每个字段的含义。
@@ -890,11 +890,11 @@ kaggle kernels output <username>/pytorch-instance-segmentation-lab-penn-fudan-gp
 
 验收：空预测和多实例重叠通过测试；真实验证/测试命令生成机器可读结果和可读图片。
 
-### Phase 6：教程和自定义扩展
+### Phase 6：文档和自定义扩展
 
-交付：5 个 examples、6 个教程章节、自定义 image + instance-id mask provider、外部模型工厂示例。
+交付：5 个 examples、文档章节、自定义 image + instance-id mask provider、外部模型工厂示例。
 
-验收：新用户只看教程能完成最小路径；自定义 provider 不修改核心 registry 即可接入。
+验收：使用者可根据文档完成最小运行路径；自定义 provider 不修改核心 registry 即可接入。
 
 ### Phase 7：Kaggle 完整训练和发布准备
 
@@ -908,7 +908,7 @@ kaggle kernels output <username>/pytorch-instance-segmentation-lab-penn-fudan-gp
 2. 任何模型/数据扩展都必须通过 registry 或显式工厂，不能在 CLI 中堆 if/else。
 3. 所有几何变换都必须有 image-mask-box 一致性测试。
 4. 不用手写 AP 算法；优先使用经过验证的 `torchmetrics`/`pycocotools`。
-5. 训练性能优化不能牺牲可读性；初学者路径必须保留可追踪的中间值。
+5. 训练性能优化不能牺牲可追踪的中间值。
 6. 本地默认命令不能强制下载预训练权重；网络依赖必须在提示中说明。Kaggle 参考配置明确使用 COCO 权重并要求 `enable_internet: true`，不受此限制。
 7. 任何记录的指标必须带 split、阈值、类别 schema、manifest hash 和 checkpoint 信息。
 8. 发现已有未提交改动时，先与改动共存，不使用破坏性 Git 命令。

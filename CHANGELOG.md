@@ -16,7 +16,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Added
 
 - Built-in COCO polygon/RLE dataset support, multiclass and empty-image handling.
-- MobileNetV3-Large Mask R-CNN teaching model.
+- MobileNetV3-Large Mask R-CNN model with an inspectable custom backbone configuration.
 - Ranked worst-case overlays and `doctor`, `init-config`, `prepare-coco`, and `compare-runs` commands.
 - Coverage enforcement, pinned CI actions, trusted publishing workflow, citation, conduct, and expanded security guidance.
 

@@ -1,4 +1,4 @@
-# PyTorch Instance Segmentation Lab
+# PyTorch Instance Segmentation
 
 [![CI](https://github.com/Doithoo/pytorch-instance-segmentation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Doithoo/pytorch-instance-segmentation-lab/actions/workflows/ci.yml)
 [![Python 3.10-3.12](https://img.shields.io/badge/python-3.10--3.12-3776AB)](pyproject.toml)
@@ -6,7 +6,7 @@
 
 [中文](README.zh-CN.md)
 
-A reproducible, teaching-oriented PyTorch instance-segmentation lab for independent masks, boxes, labels, training, COCO evaluation, error analysis, and checkpoint inference. It includes Penn-Fudan and COCO polygon/RLE providers plus torchvision Mask R-CNN models.
+Reproducible PyTorch instance-segmentation implementation with Penn-Fudan and COCO polygon/RLE data providers, torchvision Mask R-CNN models, training, evaluation, error analysis, and checkpoint inference.
 
 ![Penn-Fudan dataset and instances](docs/recorded-run/assets/dataset-preview.png)
 
@@ -14,15 +14,32 @@ A reproducible, teaching-oriented PyTorch instance-segmentation lab for independ
 download/prepare -> verify -> inspect -> dry-run -> train -> evaluate -> compare/predict
 ```
 
-## Baseline status
+## Completed Kaggle Run
 
-Evaluation protocol v2 preserves the complete confidence ranking for standard COCO-style AP. Penn-Fudan manifests use a fixed source-stratified 136/17/17 split so both Fudan and Penn domains occur in every split.
+Protocol-v2 training was executed on [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu), using a Tesla T4, the committed source-stratified manifests, and 20 training epochs. The run completed at `2026-08-22T12:19:00Z`.
 
-The protocol-v2 20-epoch T4 run is complete. Epoch 10 reached validation mask AP `0.766694`; the fixed test split produced mask AP `0.756093` and bbox AP `0.846439` with the full confidence ranking. See the [auditable recorded run](docs/recorded-run/README.md).
+| Metric | Result |
+|---|---:|
+| Best validation mask AP (epoch 10) | **0.766694** |
+| Test mask AP / AP50 / AP75 | **0.756093** / 1.000000 / 0.855337 |
+| Test bbox AP / AP50 / AP75 | **0.846439** / 1.000000 / 0.935175 |
+| Test images / targets | 17 / 40 |
+| Training / evaluation / total | 537.431s / 4.609s / 585.735s |
 
-The superseded score-filtered, lexicographic-split result remains under [`legacy-v1`](docs/recorded-run/legacy-v1/) and is not comparable with protocol v2.
+The evaluation keeps the complete confidence ranking (`metric_score_floor=0.0`). The fixed dataset identity is `64bfbd3d...b48d8`; the best checkpoint SHA-256 is `1c28ed12...b3d57`. Full reports, provenance, visualizations, and the model card are in the [recorded run](docs/recorded-run/README.md). The previous score-filtered result is preserved under [`legacy-v1`](docs/recorded-run/legacy-v1/) and is not comparable with protocol v2.
 
-## Local start
+## Scope
+
+The repository provides:
+
+- An instance target contract for independent boxes, labels, and binary masks.
+- Penn-Fudan manifests with deterministic source-stratified `136/17/17` splits.
+- COCO instance JSON preparation with polygon, RLE, multiclass, crowd, and empty-image support.
+- ResNet50-FPN v1/v2 and MobileNetV3-Large Mask R-CNN model factories.
+- Training, validation selection, post-selection test evaluation, checkpoint resume, and single-image inference.
+- Machine-readable metrics, per-image error reports, ranked worst-case overlays, and run provenance.
+
+## Local Reproduction
 
 ```bash
 uv sync --locked --extra dev
@@ -33,21 +50,17 @@ uv run instance-segment verify-data
 uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
 ```
 
-A target is a list of independently labeled `boxes`, `labels`, and boolean `masks`, not one semantic class map. `best.pt` is selected only by validation `mask_map`; test evaluation remains a post-selection operation.
+The full GPU reproduction uses the [Kaggle runner](docs/guides/kaggle.md). The exact submitted protocol-v2 runner is [run_kaggle-v2.py](docs/recorded-run/kaggle/run_kaggle-v2.py).
 
-## Built-in workflows
+## Commands
 
-- `instance-segment init-config --list`: discover wheel-installed configuration templates.
-- `instance-segment prepare-coco ...`: prepare multiclass COCO polygon/RLE datasets, including empty images.
-- `instance-segment list-models`: inspect ResNet50-FPN v1/v2 and MobileNetV3-Large Mask R-CNN variants.
-- `instance-segment evaluate`: write COCO bbox/mask metrics, per-class CSV, per-image errors, and ranked worst cases in one inference pass.
-- `instance-segment compare-runs`: compare only compatible dataset and metric protocols by default.
+- `instance-segment init-config --list`: list installed configuration templates.
+- `instance-segment prepare-coco ...`: prepare COCO polygon/RLE datasets.
+- `instance-segment list-models`: list registered Mask R-CNN variants.
+- `instance-segment evaluate`: write metrics, per-class CSV, per-image errors, and ranked worst cases.
+- `instance-segment compare-runs`: compare compatible completed runs.
 
-See the [tutorial](docs/tutorial/README.md), [guides](docs/guides/), [reference](docs/reference/), and [protocol-v2 decision](docs/architecture/0002-evaluation-and-splits.md).
-
-## Kaggle full training
-
-The generated runner embeds an exact source archive and fixed manifests, verifies a T4-or-newer GPU, downloads checksum-pinned data and weights, emits JSON heartbeats, and records full provenance. Follow the [Kaggle guide](docs/guides/kaggle.md). A complete protocol-v2 run must publish checkpoint and source hashes with its reports.
+Detailed configuration and usage information is organized under [documentation](docs/README.md), [guides](docs/guides/), [reference](docs/reference/), and [architecture decisions](docs/architecture/).
 
 ## Development
 

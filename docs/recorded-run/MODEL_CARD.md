@@ -19,7 +19,7 @@ Protocol v2 retains the complete confidence ranking (`metric_score_floor=0.0`) a
 | Box AP / AP50 / AP75 | 0.846439 / 1.000000 / 0.935175 |
 | Mask AR@100 / Box AR@100 | 0.782500 / 0.872500 |
 
-The test set contains only 17 images and 40 targets. These values are a reproducible teaching baseline, not evidence of production-level generalization.
+The test set contains only 17 images and 40 targets. These values are a reproducible reference result, not evidence of production-level generalization.
 
 ## Intended Use
 

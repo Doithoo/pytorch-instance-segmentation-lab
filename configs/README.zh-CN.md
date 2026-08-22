@@ -2,7 +2,7 @@
 
 - `learning_minimal.yaml`：小型 CPU dry-run 与本地 smoke 配置。
 - `maskrcnn_resnet50_fpn.yaml`：完整未预训练 ResNet50-FPN 模板。
-- `maskrcnn_mobilenet_v3_large.yaml`：使用 ImageNet backbone 的轻量教学模型。
+- `maskrcnn_mobilenet_v3_large.yaml`：使用 ImageNet backbone 的轻量模型配置。
 - `reference_maskrcnn.yaml`：协议 v2 的 20 epoch Kaggle GPU 替代基线配置。
 - `custom_dataset_example.yaml`：可信外部 dataset factory 契约。
 - `custom_model_example.yaml`：可信外部 model factory 契约。
