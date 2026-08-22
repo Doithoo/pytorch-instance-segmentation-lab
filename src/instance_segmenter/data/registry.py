@@ -8,6 +8,7 @@ from pathlib import Path
 
 from torch.utils.data import Dataset
 
+from instance_segmenter.data.coco import build_coco_dataset
 from instance_segmenter.data.dataset import build_pennfudan_dataset
 from instance_segmenter.data.schema import InstanceTarget
 
@@ -22,6 +23,7 @@ class DatasetSpec:
 
 
 _REGISTRY: dict[str, DatasetSpec] = {
+    "coco": DatasetSpec("coco", build_coco_dataset, "COCO instance JSON with polygon or RLE masks"),
     "pennfudan": DatasetSpec("pennfudan", build_pennfudan_dataset, "Penn-Fudan Pedestrian instance masks"),
 }
 

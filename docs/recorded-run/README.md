@@ -1,30 +1,41 @@
-# Kaggle Reference Run
+# Kaggle Protocol-v2 Reference Run
 
-[Chinese](README.zh-CN.md) | [Kaggle workflow](../guides/kaggle.md) | [Reference config](../../configs/reference_maskrcnn.yaml)
+[Chinese](README.zh-CN.md) | [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) | [Workflow](../guides/kaggle.md) | [ADR 0002](../architecture/0002-evaluation-and-splits.md)
 
-The required reference run completed successfully on a Kaggle Tesla T4 at [this kernel](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu). It used the committed Penn-Fudan `136/17/17` split, COCO-initialized torchvision Mask R-CNN ResNet-50 FPN, CUDA AMP, and all 20 configured epochs. Epoch 13 was selected by validation `mask_map`; `best.pt` was evaluated once on the held-out test split afterwards.
+Status: `COMPLETE_PROTOCOL_V2`
 
-| Item | Result |
+The 20-epoch replacement run completed on a Kaggle Tesla T4 with the source-stratified manifests and full confidence-ranked COCO AP. Epoch 10 was selected only by validation `mask_map`; the fixed 17-image test split was evaluated once afterwards.
+
+| Protocol-v2 item | Result |
 |---|---:|
-| Best validation mask AP | 0.795231 |
-| Test mask AP / AP50 / AP75 | **0.791271** / 1.000000 / 0.966054 |
-| Test bbox AP / AP50 / AP75 | **0.891579** / 1.000000 / 1.000000 |
-| Test mask AR@100 / bbox AR@100 | 0.811429 / 0.911429 |
-| Test images / targets / predictions | 17 / 35 / 37 |
-| Training / test evaluation | 525.500s / 6.251s |
-| Total Kaggle task time | 570.792s |
+| Best validation mask AP | **0.766694** |
+| Test mask AP / AP50 / AP75 | **0.756093** / 1.000000 / 0.855337 |
+| Test bbox AP / AP50 / AP75 | **0.846439** / 1.000000 / 0.935175 |
+| Test mask AR@100 / bbox AR@100 | 0.782500 / 0.872500 |
+| Test images / targets / metric predictions | 17 / 40 / 54 |
+| Analysis predictions / FP / FN at score 0.5 | 45 / 5 / 0 |
+| Training / evaluation / total | 537.431s / 4.609s / 585.735s |
 
-![Penn-Fudan dataset preview](assets/dataset-preview.png)
+![Source-stratified Penn-Fudan preview](assets/dataset-preview.png)
+
+## Ranked error analysis
+
+The evaluator retained all predictions for AP and separately used score 0.5 for readable error analysis. The highest-ranked case contains six matched targets and three additional predictions; all 40 test targets were matched at the analysis threshold.
+
+![Worst-case protocol-v2 prediction](evaluation/visualizations/worst-01-96415228031564514-prediction.png)
+
+A real single-image prediction, its JSON records, and binary masks are available under [`predictions/FudanPed00028/`](predictions/FudanPed00028/).
 
 ## Auditable artifacts
 
-- [`config.yaml`](config.yaml): Kaggle-resolved paths, `cuda`, AMP, two workers, and all 20 epochs.
-- [`run.yaml`](run.yaml): environment, split and source identities, timings, and checkpoint hashes.
-- [`metrics.csv`](metrics.csv): all 20 train/validation epochs.
-- [`kaggle-run-summary.json`](kaggle-run-summary.json): unrounded final values from the runner.
-- [`evaluation/evaluation.json`](evaluation/evaluation.json), [`per_class.csv`](evaluation/per_class.csv), and [`per_image.csv`](evaluation/per_image.csv): final test result.
-- [`evaluation/visualizations/`](evaluation/visualizations/): four test-image ground-truth/prediction pairs.
-- [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py): exact generated runner submitted for this recorded version; its embedded archive SHA-256 is `c96eef...71d91`.
-- [`kaggle/run_kaggle.py`](kaggle/run_kaggle.py): regenerated current runner, checked by CI before the next submission.
+- [`run.yaml`](run.yaml): curated protocol, environment, timings, metrics, identities, and hashes.
+- [`MODEL_CARD.md`](MODEL_CARD.md): intended use, limitations, checkpoint location, and security guidance.
+- [`config.yaml`](config.yaml): exact resolved Kaggle paths, CUDA AMP, and thresholds.
+- [`environment.json`](environment.json), [`events.jsonl`](events.jsonl), and [`metrics.csv`](metrics.csv): structured provenance and all 20 epochs.
+- [`kaggle-run-summary.json`](kaggle-run-summary.json): unrounded runner output.
+- [`evaluation/`](evaluation/): JSON, per-class/per-image CSV, and four ranked ground-truth/prediction pairs.
+- [`kaggle/run_kaggle-v2.py`](kaggle/run_kaggle-v2.py): exact submitted version-2 runner; embedded archive SHA-256 `41fa5e...b24a`.
+- [`kaggle/run_kaggle.py`](kaggle/run_kaggle.py): current generated runner for future submissions.
+- [`legacy-v1/`](legacy-v1/): preserved superseded score-filtered run and reports.
 
-The 335 MB `best.pt` and `last.pt`, raw data, and complete prediction cache are intentionally not committed. Download them from the Kaggle kernel output. The evaluated `best.pt` SHA-256 is `af68b78d28b7b063e6932adc307a4db5f61f506409e88b9871447d45893bee6b`.
+The 334.8 MB `best.pt` and `last.pt` remain in the private Kaggle kernel output. Verified SHA-256 values are `1c28ed12...b3d57` and `bda01afe...2ad1`. Load them only as trusted checkpoints.

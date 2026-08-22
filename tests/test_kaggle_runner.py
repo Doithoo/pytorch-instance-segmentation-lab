@@ -12,6 +12,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from build_kaggle_runner import RUNNER_PATH, archive_members, archive_project, check_runner, write_runner  # noqa: E402
+from kaggle_runner import _cleanup_runtime_outputs  # noqa: E402
 
 
 def test_archive_is_deterministic_and_contains_only_runtime_inputs() -> None:
@@ -49,6 +50,19 @@ def test_kernel_metadata_points_to_generated_script() -> None:
     assert metadata["enable_gpu"] == "true"
     assert metadata["enable_internet"] == "true"
     assert metadata["dataset_sources"] == []
+
+
+def test_cleanup_removes_runtime_inputs_but_keeps_artifacts(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    data = tmp_path / "data"
+    manifests = tmp_path / "manifests"
+    artifacts = tmp_path / "artifacts"
+    for path in (project, data, manifests, artifacts):
+        path.mkdir()
+        (path / "marker").write_text("x", encoding="utf-8")
+    _cleanup_runtime_outputs(project, data, manifests)
+    assert not project.exists() and not data.exists() and not manifests.exists()
+    assert (artifacts / "marker").is_file()
 
 
 def test_snapshot_rejects_secret_like_allowlist_path() -> None:

@@ -1,6 +1,11 @@
 kaggle_url: https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu
-status: COMPLETE
-completed_at_utc: '2026-08-22T11:05:03.975213+00:00'
+kaggle_kernel_version: 2
+status: COMPLETE_PROTOCOL_V2
+completed_at_utc: '2026-08-22T12:19:00.176568+00:00'
+metric_protocol: coco_confidence_ranking_v2
+metric_score_floor: 0.0
+analysis_score_threshold: 0.5
+mask_threshold: 0.5
 python: 3.12.13
 torch: 2.10.0+cu128
 torchvision: 0.25.0+cu128
@@ -11,26 +16,42 @@ gpu_name: Tesla T4
 compute_capability: sm_75
 cuda_device_count: 2
 seed: 42
-source_archive_bytes: 51384
-source_archive_sha256: c96eef1176d79c378012943869a8111df51f286bdee7e204e82d4f2383571d91
-resolved_config_sha256: 15929e45ed5f3d24a877558bfaed8a1ddd6daad79b01a6787cbbc87552a6acec
-dataset_identity: a9c1ea7e47ad9df640f7df33c7ebf617da027cce3c1b847fd406797a813b4b99
+source_archive_bytes: 60506
+source_archive_sha256: 41fa5e1825740cb19ae9205f285678f3cc7e5621a0e09d860e654ab72a72b24a
+submitted_runner_sha256: 422d3b289229b62c97fcba66d5adb2789786a7955a61412ae4b9d8ad835b6252
+resolved_config_sha256: 9cfbefb384daf6bfe0a0cf75122a59b82737c06539a6927280955e053f36a975
+dataset_identity: 64bfbd3df4c33b089e2c8710795f43bd21c856ff7001747447ab9849af7b48d8
+manifest_format_version: 2
+split_strategy: source-stratified-sha256-v2
+split_seed: 42
 split_counts:
   train: 136
   valid: 17
   test: 17
 split_hashes:
-  train: 875f24b8d1e01669c9419352b16ea9d5ccaf3bc08814ed0f31757f9cb80ec547
-  valid: 8700e0f47f72bd4aa875d924fc5aa6431b798f27131a27941ca029fb310c7463
-  test: e9398a9b09b5a27a8c0ce9b6bae1ec820103cbcd04056343d4c58a040a664af9
+  train: 973758fcdc6360871478bfe225af5bae0eb8f30166d2ccd3600fa55e815d598d
+  valid: 44214e452f7597d07e9fde1dde56e26706333e3039635a6a20ba6bf1868aa40f
+  test: d7e7329286b78605befebc3695398b8252658764da6bbdf1cf6de12270ca9d28
 completed_epochs: 20
-best_epoch: 13
-best_valid_mask_map: 0.7952309846878052
-test_mask_map: 0.791271448135376
-test_bbox_map: 0.8915790915489197
-training_seconds: 525.5
-evaluation_seconds: 6.251
-prediction_seconds: 1.124
-total_seconds: 570.792
-best_checkpoint_sha256: af68b78d28b7b063e6932adc307a4db5f61f506409e88b9871447d45893bee6b
-last_checkpoint_sha256: 1db0520e9659f033e29363d74f380710f91c7d0b46f5c5c70c2e9b4648d8a910
+best_epoch: 10
+best_valid_mask_map: 0.7666944265365601
+test_mask_map: 0.7560926079750061
+test_mask_map_50: 1.0
+test_mask_map_75: 0.8553368449211121
+test_mask_mar_100: 0.7825000286102295
+test_bbox_map: 0.8464389443397522
+test_bbox_map_50: 1.0
+test_bbox_map_75: 0.9351752996444702
+test_bbox_mar_100: 0.8725000023841858
+test_images: 17
+test_targets: 40
+metric_predictions: 54
+analysis_predictions_at_0_5: 45
+analysis_false_positives: 5
+analysis_false_negatives: 0
+training_seconds: 537.431
+evaluation_seconds: 4.609
+prediction_seconds: 1.113
+total_seconds: 585.735
+best_checkpoint_sha256: 1c28ed12b3b9d380bb3888a99267c6d7694efcfd2a93b22867abbb2ccb6b3d57
+last_checkpoint_sha256: bda01afe2b518fea34d8f101c47c36dbb3ea5239724743a048a31f04507d2ad1

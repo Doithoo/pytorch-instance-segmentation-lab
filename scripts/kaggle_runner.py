@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import shutil
 import subprocess
@@ -126,8 +127,11 @@ def run_kaggle_workflow(project: Path, archive_sha256: str, archive_bytes: int) 
         with heartbeat(phase):
             metadata = verify_prepared_data(data_dir, manifest_dir)
         expected_counts = {"train": 136, "valid": 17, "test": 17}
+        expected_identity = "64bfbd3df4c33b089e2c8710795f43bd21c856ff7001747447ab9849af7b48d8"
         if metadata.split_counts != expected_counts:
             raise RuntimeError("unexpected Penn-Fudan split counts: " + str(metadata.split_counts))
+        if metadata.identity != expected_identity or metadata.split_strategy != "source-stratified-sha256-v2":
+            raise RuntimeError("unexpected Penn-Fudan protocol-v2 dataset identity")
         emit(phase, "completed", dataset_identity=metadata.identity, split_counts=metadata.split_counts)
 
         phase = "inspect_data"
@@ -188,6 +192,11 @@ def run_kaggle_workflow(project: Path, archive_sha256: str, archive_bytes: int) 
         )
         prediction_seconds = time.perf_counter() - prediction_started
         emit(phase, "completed", instance_count=prediction.instance_count, output=str(prediction.output_dir))
+
+        phase = "cleanup"
+        emit(phase, "started")
+        _cleanup_runtime_outputs(project, data_dir, manifest_dir)
+        emit(phase, "completed")
 
         phase = "finalize"
         summary = _write_success_summary(
@@ -264,6 +273,13 @@ def _copy_fixed_manifests(source: Path, destination: Path) -> None:
     shutil.copytree(source, destination)
 
 
+def _cleanup_runtime_outputs(project: Path, data_dir: Path, manifest_dir: Path) -> None:
+    """Keep downloaded Kaggle outputs focused on artifacts rather than runtime inputs."""
+    for path in (project, data_dir, manifest_dir):
+        if path.exists():
+            shutil.rmtree(path)
+
+
 def _clear_cuda_cache() -> None:
     import gc
 
@@ -295,7 +311,6 @@ def _write_success_summary(
     prediction_seconds: float,
     total_seconds: float,
 ) -> str:
-    import pycocotools
     import torch
     import torchmetrics
     import torchvision
@@ -308,17 +323,22 @@ def _write_success_summary(
         "torch_version": torch.__version__,
         "torchvision_version": torchvision.__version__,
         "torchmetrics_version": torchmetrics.__version__,
-        "pycocotools_version": getattr(pycocotools, "__version__", "unknown"),
+        "pycocotools_version": importlib.metadata.version("pycocotools"),
         "gpu": report,
         "source_archive_sha256": archive_sha256,
         "source_archive_bytes": archive_bytes,
         "resolved_config_sha256": _sha256(run_dir / "config.yaml"),
         "dataset_identity": metadata.identity,
+        "manifest_format_version": metadata.manifest_format_version,
+        "split_strategy": metadata.split_strategy,
+        "split_seed": metadata.split_seed,
         "split_counts": metadata.split_counts,
         "split_hashes": metadata.split_hashes,
         "completed_epochs": result.completed_epochs,
         "best_epoch": result.best_epoch,
         "best_valid_mask_map": result.best_metric,
+        "metric_protocol": "COCO confidence ranking; no display-threshold filtering",
+        "metric_score_floor": 0.0,
         "training_seconds": round(training_seconds, 3),
         "evaluation_seconds": round(evaluation_seconds, 3),
         "prediction_seconds": round(prediction_seconds, 3),
@@ -328,6 +348,7 @@ def _write_success_summary(
         "target_count": evaluation.target_count,
         "prediction_count": evaluation.prediction_count,
         "checkpoint_sha256": _sha256(run_dir / "best.pt"),
+        "last_checkpoint_sha256": _sha256(run_dir / "last.pt"),
         "checkpoint": str(run_dir / "best.pt"),
         "evaluation_dir": str(evaluation.output_dir),
     }

@@ -132,6 +132,7 @@ def restore_checkpoint(
     model: nn.Module,
     expected_model_name: str,
     expected_schema: LabelSchema,
+    expected_manifest_hashes: Mapping[str, str] | None = None,
     optimizer: torch.optim.Optimizer | None = None,
     scheduler: object | None = None,
     restore_rng: bool = True,
@@ -140,6 +141,8 @@ def restore_checkpoint(
         raise CheckpointError(f"checkpoint model is {payload['model_name']!r}, expected {expected_model_name!r}")
     if LabelSchema.from_dict(payload["label_schema"]) != expected_schema:
         raise CheckpointError("checkpoint label schema does not match current dataset")
+    if expected_manifest_hashes is not None and dict(payload["manifest_hashes"]) != dict(expected_manifest_hashes):
+        raise CheckpointError("checkpoint manifest hashes do not match current dataset splits")
     try:
         model.load_state_dict(payload["model_state"])
         if optimizer is not None and payload["optimizer_state"] is not None:

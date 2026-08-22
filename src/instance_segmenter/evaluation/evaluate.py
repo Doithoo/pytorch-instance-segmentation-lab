@@ -1,4 +1,4 @@
-"""Checkpoint evaluation, reports, and representative overlays."""
+"""Checkpoint evaluation, machine-readable reports, and ranked overlays."""
 
 from __future__ import annotations
 
@@ -13,11 +13,12 @@ from torch.utils.data import DataLoader
 
 from instance_segmenter.config import AppConfig, config_from_dict
 from instance_segmenter.data.collate import instance_collate
-from instance_segmenter.data.manifest import DatasetMetadata, load_dataset_metadata
+from instance_segmenter.data.manifest import DatasetMetadata, load_dataset_metadata, verify_manifest_hashes
 from instance_segmenter.data.providers import build_configured_dataset
 from instance_segmenter.data.schema import InstanceTarget
 from instance_segmenter.evaluation.metrics import MetricSummary, evaluate_model
 from instance_segmenter.evaluation.visualization import save_overlay
+from instance_segmenter.inference.output import normalize_prediction
 from instance_segmenter.models.extensions import load_external_model
 from instance_segmenter.models.registry import build_model
 from instance_segmenter.training.checkpoint import load_checkpoint, restore_checkpoint
@@ -34,12 +35,49 @@ class EvaluationResult:
     prediction_count: int
 
 
+@dataclass(frozen=True)
+class _VisualSample:
+    severity: tuple[int, int, int, int]
+    image: torch.Tensor
+    target: InstanceTarget
+    prediction: dict[str, torch.Tensor]
+
+
+class _SampleCollector:
+    def __init__(self, *, score_threshold: float, mask_threshold: float, keep_visuals: int) -> None:
+        self.score_threshold = score_threshold
+        self.mask_threshold = mask_threshold
+        self.keep_visuals = keep_visuals
+        self.reports: list[dict[str, int]] = []
+        self.visuals: list[_VisualSample] = []
+
+    def __call__(self, image: torch.Tensor, target: InstanceTarget, metric_prediction: dict[str, torch.Tensor]) -> None:
+        prediction = normalize_prediction(
+            metric_prediction,
+            score_threshold=self.score_threshold,
+            mask_threshold=self.mask_threshold,
+        )
+        report = _instance_report(target, prediction)
+        self.reports.append(report)
+        if self.keep_visuals:
+            severity = (
+                report["false_negative"],
+                report["false_positive"],
+                report["low_iou"],
+                report["image_id"],
+            )
+            self.visuals.append(_VisualSample(severity, image, target, prediction))
+            self.visuals.sort(key=lambda item: item.severity, reverse=True)
+            del self.visuals[self.keep_visuals :]
+
+
 def evaluate_checkpoint(
     checkpoint_path: str | Path,
     *,
     split: str,
     output_dir: str | Path | None = None,
     device: str = "auto",
+    metric_score_floor: float | None = None,
     score_threshold: float | None = None,
     mask_threshold: float | None = None,
     plot: bool = False,
@@ -49,27 +87,31 @@ def evaluate_checkpoint(
         raise ValueError(f"unknown split {split!r}")
     checkpoint = load_checkpoint(checkpoint_path, map_location="cpu")
     config = config_from_dict(checkpoint["resolved_config"])
-    if score_threshold is None:
-        score_threshold = config.training.score_threshold
-    if mask_threshold is None:
-        mask_threshold = config.training.mask_threshold
+    metric_score_floor = config.training.evaluation_score_floor if metric_score_floor is None else metric_score_floor
+    score_threshold = config.training.score_threshold if score_threshold is None else score_threshold
+    mask_threshold = config.training.mask_threshold if mask_threshold is None else mask_threshold
+    for name, value in (
+        ("metric_score_floor", metric_score_floor),
+        ("score_threshold", score_threshold),
+        ("mask_threshold", mask_threshold),
+    ):
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"{name} must be between 0 and 1")
+
     resolved_device = resolve_device(device)
     metadata = load_dataset_metadata(config.data.manifest_dir)
+    verify_manifest_hashes(config.data.manifest_dir, checkpoint["manifest_hashes"])
     model = _build_model(replace(config, model=replace(config.model, weights="none"))).to(resolved_device)
     restore_checkpoint(
         checkpoint,
         model=model,
         expected_model_name=config.model.name,
         expected_schema=metadata.label_schema,
+        expected_manifest_hashes=metadata.split_hashes,
         restore_rng=False,
     )
     limit = {"train": config.data.train_limit, "valid": config.data.valid_limit, "test": config.data.test_limit}[split]
-    dataset = build_configured_dataset(
-        config.data,
-        split,
-        training=False,
-        limit=limit,
-    )
+    dataset = build_configured_dataset(config.data, split, training=False, limit=limit)
     loader = DataLoader(
         dataset,
         batch_size=config.data.batch_size,
@@ -77,25 +119,31 @@ def evaluate_checkpoint(
         num_workers=config.data.num_workers,
         collate_fn=instance_collate,
     )
+    destination = Path(output_dir) if output_dir is not None else Path(checkpoint_path).parent / "evaluation"
+    _prepare_output_dir(destination, overwrite)
+    collector = _SampleCollector(
+        score_threshold=score_threshold, mask_threshold=mask_threshold, keep_visuals=4 if plot else 0
+    )
     summary = evaluate_model(
         model,
         loader,
         resolved_device,
-        score_threshold=score_threshold,
+        score_floor=metric_score_floor,
         mask_threshold=mask_threshold,
+        sample_callback=collector,
     )
-    destination = Path(output_dir) if output_dir is not None else Path(checkpoint_path).parent / "evaluation"
-    _prepare_output_dir(destination, overwrite)
-    per_image = _collect_per_image(
-        model,
-        loader,
-        resolved_device,
-        destination / "visualizations" if plot else None,
+    _write_reports(
+        destination,
+        summary,
+        collector.reports,
+        split,
         metadata,
+        metric_score_floor,
         score_threshold,
         mask_threshold,
     )
-    _write_reports(destination, summary, per_image, split, metadata, score_threshold, mask_threshold)
+    if plot:
+        _write_ranked_overlays(destination / "visualizations", collector.visuals, metadata)
     return EvaluationResult(
         destination,
         summary.metrics,
@@ -128,24 +176,31 @@ def _write_reports(
     per_image: list[dict[str, int]],
     split: str,
     metadata: DatasetMetadata,
+    metric_score_floor: float,
     score_threshold: float,
     mask_threshold: float,
 ) -> None:
     class_names = {item.id: item.name for item in metadata.label_schema.classes}
     payload = {
         "split": split,
-        "score_threshold": score_threshold,
+        "metric_score_floor": metric_score_floor,
+        "analysis_score_threshold": score_threshold,
         "mask_threshold": mask_threshold,
         "metrics": summary.metrics,
         "image_count": summary.image_count,
         "target_count": summary.target_count,
         "prediction_count": summary.prediction_count,
         "class_names": class_names,
+        "dataset_identity": metadata.identity,
+        "split_hashes": metadata.split_hashes,
         "metric_backend": "torchmetrics.MeanAveragePrecision with pycocotools",
+        "metric_protocol": "COCO confidence ranking; no display-threshold filtering",
     }
     (output_dir / "evaluation.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with (output_dir / "per_class.csv").open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=("class_id", "class_name", "mask_map", "bbox_map"))
+        writer = csv.DictWriter(
+            handle, fieldnames=("class_id", "class_name", "mask_map", "bbox_map"), lineterminator="\n"
+        )
         writer.writeheader()
         for row in summary.per_class:
             writer.writerow({**row, "class_name": class_names.get(int(row["class_id"]), str(row["class_id"]))})
@@ -161,40 +216,20 @@ def _write_reports(
                 "false_negative",
                 "low_iou",
             ),
+            lineterminator="\n",
         )
         writer.writeheader()
-        writer.writerows(per_image)
+        writer.writerows(sorted(per_image, key=lambda row: row["image_id"]))
 
 
-def _collect_per_image(
-    model: torch.nn.Module,
-    loader: DataLoader[object],
-    device: torch.device,
-    visualization_dir: Path | None,
-    metadata: DatasetMetadata,
-    score_threshold: float,
-    mask_threshold: float,
-) -> list[dict[str, int]]:
-    if visualization_dir is not None:
-        visualization_dir.mkdir(parents=True, exist_ok=True)
+def _write_ranked_overlays(output_dir: Path, samples: list[_VisualSample], metadata: DatasetMetadata) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
     class_names = {item.id: item.name for item in metadata.label_schema.classes}
-    model.eval()
-    reports: list[dict[str, int]] = []
-    with torch.inference_mode():
-        for images, targets in loader:
-            outputs = model([image.to(device) for image in images])
-            for image, target, output in zip(images, targets, outputs, strict=True):
-                prediction = _threshold_output(output, score_threshold, mask_threshold)
-                reports.append(_instance_report(target, prediction))
-                if visualization_dir is not None and len(reports) <= 4:
-                    image_id = int(target["image_id"].item())
-                    save_overlay(
-                        visualization_dir / f"{image_id}-ground-truth.png", image, target, class_names=class_names
-                    )
-                    save_overlay(
-                        visualization_dir / f"{image_id}-prediction.png", image, prediction, class_names=class_names
-                    )
-    return reports
+    for rank, sample in enumerate(samples, start=1):
+        image_id = int(sample.target["image_id"].item())
+        prefix = f"worst-{rank:02d}-{image_id}"
+        save_overlay(output_dir / f"{prefix}-ground-truth.png", sample.image, sample.target, class_names=class_names)
+        save_overlay(output_dir / f"{prefix}-prediction.png", sample.image, sample.prediction, class_names=class_names)
 
 
 def _instance_report(target: InstanceTarget, prediction: dict[str, torch.Tensor]) -> dict[str, int]:
@@ -238,45 +273,4 @@ def _instance_report(target: InstanceTarget, prediction: dict[str, torch.Tensor]
         "false_positive": len(unmatched_predictions),
         "false_negative": len(unmatched_targets),
         "low_iou": low_iou,
-    }
-
-
-def _write_overlays(
-    model: torch.nn.Module,
-    loader: DataLoader[object],
-    device: torch.device,
-    output_dir: Path,
-    metadata: DatasetMetadata,
-    score_threshold: float,
-    mask_threshold: float,
-) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    class_names = {item.id: item.name for item in metadata.label_schema.classes}
-    model.eval()
-    written = 0
-    with torch.inference_mode():
-        for images, targets in loader:
-            outputs = model([image.to(device) for image in images])
-            for image, target, output in zip(images, targets, outputs, strict=True):
-                prediction = _threshold_output(output, score_threshold, mask_threshold)
-                image_id = int(target["image_id"].item())
-                save_overlay(output_dir / f"{image_id}-ground-truth.png", image, target, class_names=class_names)
-                save_overlay(output_dir / f"{image_id}-prediction.png", image, prediction, class_names=class_names)
-                written += 1
-                if written >= 4:
-                    return
-
-
-def _threshold_output(
-    output: dict[str, torch.Tensor], score_threshold: float, mask_threshold: float
-) -> dict[str, torch.Tensor]:
-    keep = output["scores"].detach().cpu() >= score_threshold
-    masks = output["masks"].detach().cpu()
-    if masks.ndim == 4:
-        masks = masks[:, 0]
-    return {
-        "boxes": output["boxes"].detach().cpu()[keep],
-        "labels": output["labels"].detach().cpu()[keep],
-        "scores": output["scores"].detach().cpu()[keep],
-        "masks": (masks[keep] >= mask_threshold),
     }

@@ -4,17 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import torch
 from PIL import Image, ImageDraw
+
+from instance_segmenter.data.schema import InstanceTarget
 
 PALETTE = ((36, 180, 99), (45, 125, 210), (230, 120, 50), (190, 70, 150), (225, 80, 80), (120, 150, 50))
 
 
 def render_instances(
     image: torch.Tensor,
-    instances: Mapping[str, torch.Tensor],
+    instances: Mapping[str, torch.Tensor] | InstanceTarget,
     *,
     class_names: Mapping[int, str],
     score_threshold: float = 0.0,
@@ -23,12 +26,13 @@ def render_instances(
     if image.ndim != 3 or image.shape[0] != 3:
         raise ValueError("image must have shape [3, H, W]")
     base = _tensor_image(image).convert("RGBA")
-    masks = instances["masks"].detach().cpu()
+    values = cast(Mapping[str, torch.Tensor], instances)
+    masks = values["masks"].detach().cpu()
     if masks.ndim == 4 and masks.shape[1] == 1:
         masks = masks[:, 0]
-    boxes = instances["boxes"].detach().cpu()
-    labels = instances["labels"].detach().cpu()
-    scores = instances.get("scores")
+    boxes = values["boxes"].detach().cpu()
+    labels = values["labels"].detach().cpu()
+    scores = values.get("scores")
     score_values = scores.detach().cpu() if scores is not None else torch.ones((labels.shape[0],), dtype=torch.float32)
     if masks.ndim != 3 or boxes.shape != (masks.shape[0], 4) or labels.shape != (masks.shape[0],):
         raise ValueError("instances have inconsistent boxes, labels, and masks")
@@ -58,7 +62,7 @@ def render_instances(
 def save_overlay(
     output: str | Path,
     image: torch.Tensor,
-    instances: Mapping[str, torch.Tensor],
+    instances: Mapping[str, torch.Tensor] | InstanceTarget,
     *,
     class_names: Mapping[int, str],
     score_threshold: float = 0.0,

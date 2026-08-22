@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytorch-instance-segmentation-lab"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Beginner-oriented reproducible PyTorch instance segmentation"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -34,6 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=9,<10",
+    "pytest-cov>=5,<8",
     "ruff>=0.6,<1",
     "mypy>=1.15,<3",
     "types-PyYAML>=6,<7",
@@ -58,6 +59,9 @@ instance-segment = "instance_segmenter.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.dynamic]
+version = { attr = "instance_segmenter.__version__" }
+
 [tool.setuptools.package-data]
 instance_segmenter = ["py.typed"]
 
@@ -66,6 +70,7 @@ instance_segmenter = ["py.typed"]
     "configs/custom_dataset_example.yaml",
     "configs/custom_model_example.yaml",
     "configs/learning_minimal.yaml",
+    "configs/maskrcnn_mobilenet_v3_large.yaml",
     "configs/maskrcnn_resnet50_fpn.yaml",
     "configs/reference_maskrcnn.yaml",
 ]
@@ -82,7 +87,20 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "tests"
+addopts = "-ra"
+filterwarnings = [
+    "error",
+    "ignore:__array__ implementation doesn't accept a copy keyword:DeprecationWarning:pycocotools.mask",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["instance_segmenter"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 75
 
 [tool.mypy]
 python_version = "3.12"

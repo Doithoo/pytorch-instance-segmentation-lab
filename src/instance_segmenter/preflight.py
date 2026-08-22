@@ -22,10 +22,10 @@ class DeviceReport:
 def inspect_device(requested: str = "auto") -> DeviceReport:
     device = resolve_device(requested)
     if device.type != "cuda":
-        return DeviceReport(str(device), torch.__version__, False, torch.version.cuda, None, None)
+        return DeviceReport(str(device), str(torch.__version__), False, torch.version.cuda, None, None)
     return DeviceReport(
         str(device),
-        torch.__version__,
+        str(torch.__version__),
         True,
         torch.version.cuda,
         torch.cuda.get_device_name(device),

@@ -1,5 +1,17 @@
 python: 3.12.13
 platform: Linux-6.12.90+-x86_64-with-glibc2.35
-torch: 2.10.0+cu128
 device: cuda
+torch: 2.10.0+cu128
+torchvision: 0.25.0+cu128
+torchmetrics: 1.9.0
+pycocotools: 2.0.11
+numpy: 2.0.2
+cuda_version: 12.8
+cudnn_version: 91002
 cuda_device_count: 2
+gpu_name: Tesla T4
+git_commit: None
+git_dirty: False
+uv_lock_sha256: None
+resumed_from: None
+resume_epoch: 0

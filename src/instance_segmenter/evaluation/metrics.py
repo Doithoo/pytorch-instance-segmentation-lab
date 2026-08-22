@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 import torch
@@ -10,6 +10,9 @@ from torch import nn
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 from instance_segmenter.data.schema import InstanceTarget
+from instance_segmenter.inference.output import normalize_prediction
+
+EvaluationSampleCallback = Callable[[torch.Tensor, InstanceTarget, dict[str, torch.Tensor]], None]
 
 
 @dataclass(frozen=True)
@@ -26,8 +29,9 @@ def evaluate_model(
     loader: Iterable[tuple[list[torch.Tensor], list[InstanceTarget]]],
     device: torch.device,
     *,
-    score_threshold: float,
+    score_floor: float,
     mask_threshold: float,
+    sample_callback: EvaluationSampleCallback | None = None,
 ) -> MetricSummary:
     """Evaluate an instance model without exposing targets during model inference."""
     bbox_metric = MeanAveragePrecision(iou_type="bbox", class_metrics=True)
@@ -43,13 +47,22 @@ def evaluate_model(
             outputs = model(device_images)
             if not isinstance(outputs, list) or len(outputs) != len(targets):
                 raise RuntimeError("model evaluation output must be a list aligned with images")
-            predictions = [_prepare_prediction(output, score_threshold, mask_threshold) for output in outputs]
+            all_predictions = [
+                normalize_prediction(output, score_threshold=0.0, mask_threshold=mask_threshold) for output in outputs
+            ]
+            predictions = [
+                normalize_prediction(item, score_threshold=score_floor, mask_threshold=mask_threshold)
+                for item in all_predictions
+            ]
             references = [_prepare_target(target) for target in targets]
             bbox_metric.update(
                 [{key: value for key, value in item.items() if key != "masks"} for item in predictions],
                 [{key: value for key, value in item.items() if key != "masks"} for item in references],
             )
             mask_metric.update(predictions, references)
+            if sample_callback is not None:
+                for image, target, prediction in zip(images, targets, all_predictions, strict=True):
+                    sample_callback(image, target, prediction)
             image_count += len(images)
             target_count += sum(int(target["labels"].shape[0]) for target in targets)
             prediction_count += sum(int(prediction["labels"].shape[0]) for prediction in predictions)
@@ -68,31 +81,6 @@ def evaluate_model(
         "mask_mar_100": _scalar(masks["mar_100"]),
     }
     return MetricSummary(metrics, _per_class(bbox, masks), image_count, target_count, prediction_count)
-
-
-def _prepare_prediction(output: object, score_threshold: float, mask_threshold: float) -> dict[str, torch.Tensor]:
-    if not isinstance(output, dict):
-        raise RuntimeError("model prediction must be a dictionary")
-    required = {"boxes", "labels", "scores", "masks"}
-    if required - set(output):
-        raise RuntimeError(f"model prediction misses fields: {sorted(required - set(output))}")
-    boxes = output["boxes"].detach().cpu().to(torch.float32)
-    labels = output["labels"].detach().cpu().to(torch.int64)
-    scores = output["scores"].detach().cpu().to(torch.float32)
-    masks = output["masks"].detach().cpu()
-    if not all(isinstance(value, torch.Tensor) for value in (boxes, labels, scores, masks)):
-        raise RuntimeError("model prediction fields must be tensors")
-    if masks.ndim == 4 and masks.shape[1] == 1:
-        masks = masks[:, 0]
-    if masks.ndim != 3:
-        raise RuntimeError("prediction masks must have shape [N, 1, H, W] or [N, H, W]")
-    keep = scores >= score_threshold
-    return {
-        "boxes": boxes[keep],
-        "labels": labels[keep],
-        "scores": scores[keep],
-        "masks": (masks[keep] >= mask_threshold),
-    }
 
 
 def _prepare_target(target: InstanceTarget) -> dict[str, torch.Tensor]:

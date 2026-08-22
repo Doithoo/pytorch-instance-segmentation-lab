@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import math
 import sys
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import yaml
@@ -21,9 +21,27 @@ def build_parser() -> argparse.ArgumentParser:
     _add_config_arguments(show_config)
     show_config.set_defaults(handler=_show_config)
 
+    init_config = subparsers.add_parser("init-config", help="copy an installed configuration template")
+    init_config.add_argument("name", nargs="?", default="learning_minimal")
+    init_config.add_argument("--list", action="store_true", dest="list_templates")
+    init_config.add_argument("--output", type=Path)
+    init_config.add_argument("--overwrite", action="store_true")
+    init_config.set_defaults(handler=_init_config)
+
+    doctor = subparsers.add_parser("doctor", help="inspect the selected compute device")
+    doctor.add_argument("--device", choices=("auto", "cpu", "cuda", "mps"), default="auto")
+    doctor.set_defaults(handler=_doctor)
+
     prepare = subparsers.add_parser("prepare-data", help="write fixed Penn-Fudan manifests")
     _add_data_paths(prepare)
     prepare.set_defaults(handler=_prepare_data)
+
+    prepare_coco = subparsers.add_parser("prepare-coco", help="prepare manifests from COCO instance JSON")
+    _add_data_paths(prepare_coco)
+    prepare_coco.add_argument("--train-annotations", type=Path, required=True)
+    prepare_coco.add_argument("--valid-annotations", type=Path, required=True)
+    prepare_coco.add_argument("--test-annotations", type=Path, required=True)
+    prepare_coco.set_defaults(handler=_prepare_coco)
 
     verify = subparsers.add_parser("verify-data", help="verify source data and fixed manifests")
     _add_data_paths(verify)
@@ -56,6 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--split", choices=("train", "valid", "test"), default="test")
     evaluate.add_argument("--output-dir", type=Path)
     evaluate.add_argument("--device", choices=("auto", "cpu", "cuda", "mps"), default="auto")
+    evaluate.add_argument("--metric-score-floor", type=_probability)
     evaluate.add_argument("--score-threshold", type=_probability)
     evaluate.add_argument("--mask-threshold", type=_probability)
     evaluate.add_argument("--plot", action="store_true")
@@ -71,6 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--mask-threshold", type=_probability)
     predict.add_argument("--overwrite", action="store_true")
     predict.set_defaults(handler=_predict)
+
+    compare = subparsers.add_parser("compare-runs", help="rank compatible completed runs")
+    compare.add_argument("run_dirs", nargs="+", type=Path)
+    compare.add_argument("--metric", default="valid_mask_map")
+    compare.add_argument("--allow-incompatible", action="store_true")
+    compare.set_defaults(handler=_compare_runs)
     return parser
 
 
@@ -106,10 +131,45 @@ def _show_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def _init_config(args: argparse.Namespace) -> int:
+    from instance_segmenter.resources import CONFIG_TEMPLATES, copy_config_template
+
+    if args.list_templates:
+        print("\n".join(CONFIG_TEMPLATES))
+        return 0
+    output = args.output if args.output is not None else Path(f"{args.name}.yaml")
+    print(copy_config_template(args.name, output, overwrite=args.overwrite))
+    return 0
+
+
+def _doctor(args: argparse.Namespace) -> int:
+    from instance_segmenter.preflight import inspect_device
+
+    print(yaml.safe_dump(asdict(inspect_device(args.device)), sort_keys=False), end="")
+    return 0
+
+
 def _prepare_data(args: argparse.Namespace) -> int:
     from instance_segmenter.data.manifest import prepare_penn_fudan
 
     metadata = prepare_penn_fudan(args.data_dir, args.manifest_dir)
+    print(f"identity={metadata.identity}")
+    print(" ".join(f"{split}={count}" for split, count in metadata.split_counts.items()))
+    return 0
+
+
+def _prepare_coco(args: argparse.Namespace) -> int:
+    from instance_segmenter.data.coco import prepare_coco_instances
+
+    metadata = prepare_coco_instances(
+        args.data_dir,
+        args.manifest_dir,
+        {
+            "train": args.train_annotations,
+            "valid": args.valid_annotations,
+            "test": args.test_annotations,
+        },
+    )
     print(f"identity={metadata.identity}")
     print(" ".join(f"{split}={count}" for split, count in metadata.split_counts.items()))
     return 0
@@ -189,6 +249,7 @@ def _evaluate(args: argparse.Namespace) -> int:
         split=args.split,
         output_dir=args.output_dir,
         device=args.device,
+        metric_score_floor=args.metric_score_floor,
         score_threshold=args.score_threshold,
         mask_threshold=args.mask_threshold,
         plot=args.plot,
@@ -209,6 +270,17 @@ def _predict(args: argparse.Namespace) -> int:
         overwrite=args.overwrite,
     )
     print(result.output_dir)
+    return 0
+
+
+def _compare_runs(args: argparse.Namespace) -> int:
+    from instance_segmenter.evaluation.comparison import compare_runs
+
+    results = compare_runs(args.run_dirs, args.metric, allow_incompatible=args.allow_incompatible)
+    print("run\tmetric\tvalue\tepoch")
+    for result in results:
+        epoch = "evaluation" if result.epoch is None else str(result.epoch)
+        print(f"{result.run_dir}\t{result.metric}\t{result.value:.6f}\t{epoch}")
     return 0
 
 

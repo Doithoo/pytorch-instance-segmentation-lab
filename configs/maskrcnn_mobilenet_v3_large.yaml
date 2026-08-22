@@ -1,0 +1,36 @@
+run:
+  name: maskrcnn-mobilenet-v3
+  seed: 42
+  output_dir: artifacts
+data:
+  provider: pennfudan
+  root: data/raw
+  manifest_dir: data/manifests
+  image_size: null
+  batch_size: 2
+  num_workers: 0
+  horizontal_flip: 0.5
+  train_limit: null
+  valid_limit: null
+  test_limit: null
+model:
+  name: maskrcnn_mobilenet_v3_large
+  weights: imagenet_v2
+  num_classes: 2
+training:
+  epochs: 20
+  optimizer: sgd
+  learning_rate: 0.005
+  momentum: 0.9
+  weight_decay: 0.0005
+  scheduler: step
+  step_size: 6
+  gamma: 0.1
+  amp: auto
+  grad_clip_norm: null
+  best_metric: mask_map
+  evaluation_score_floor: 0.0
+  score_threshold: 0.5
+  mask_threshold: 0.5
+  evaluate_every: 1
+device: auto

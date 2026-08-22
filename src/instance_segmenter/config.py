@@ -59,6 +59,7 @@ class TrainingConfig:
     amp: bool | str = "auto"
     grad_clip_norm: float | None = None
     best_metric: str = "mask_map"
+    evaluation_score_floor: float = 0.0
     score_threshold: float = 0.5
     mask_threshold: float = 0.5
     evaluate_every: int = 1
@@ -207,8 +208,7 @@ def _validate_config(config: AppConfig) -> None:
     _require_string("model.name", config.model.name)
     if config.model.factory is not None:
         _require_string("model.factory", config.model.factory)
-    if config.model.weights not in {"none", "coco_v1"}:
-        raise ConfigError("model.weights must be 'none' or 'coco_v1'")
+    _require_string("model.weights", config.model.weights)
     _require_integer("model.num_classes", config.model.num_classes, minimum=2)
     if not isinstance(config.model.params, dict):
         raise ConfigError("model.params must be a mapping")
@@ -226,6 +226,7 @@ def _validate_config(config: AppConfig) -> None:
         _require_number("training.grad_clip_norm", config.training.grad_clip_norm, minimum=0.0, exclusive=True)
     if config.training.best_metric != "mask_map":
         raise ConfigError("training.best_metric must be 'mask_map'")
+    _require_probability("training.evaluation_score_floor", config.training.evaluation_score_floor)
     _require_probability("training.score_threshold", config.training.score_threshold)
     _require_probability("training.mask_threshold", config.training.mask_threshold)
     _require_integer("training.evaluate_every", config.training.evaluate_every, minimum=1)

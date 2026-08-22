@@ -1,4 +1,7 @@
-.PHONY: lint format-check typecheck test build metadata check kaggle-runner
+.PHONY: lock-check lint format-check typecheck test coverage build metadata kaggle-runner check
+
+lock-check:
+	uv lock --check
 
 lint:
 	uv run ruff check .
@@ -12,6 +15,9 @@ typecheck:
 test:
 	uv run python -m pytest
 
+coverage:
+	uv run python -m pytest --cov=instance_segmenter --cov-report=term-missing
+
 build:
 	uv run python -m build
 
@@ -21,4 +27,4 @@ metadata:
 kaggle-runner:
 	uv run python scripts/build_kaggle_runner.py --check
 
-check: lint format-check typecheck test build metadata kaggle-runner
+check: lock-check lint format-check typecheck coverage build metadata kaggle-runner

@@ -1,6 +1,6 @@
 # ADR-0001：PyTorch 实例分割学习实验室实施规格
 
-- 状态：待实施
+- 状态：v0.1.0 已实施；评估和数据划分决策由 [ADR 0002](0002-evaluation-and-splits.zh-CN.md) 修订
 - 目标目录：`pytorch-instance-segmentation-lab`
 - 参考项目：`pytorch-object-detection-lab`
 - 项目类型：面向初学者的、可复现的 PyTorch 实例分割学习项目

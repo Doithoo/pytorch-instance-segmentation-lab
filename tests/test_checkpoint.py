@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 import torch
 
 from instance_segmenter.config import AppConfig
@@ -31,6 +32,33 @@ def test_checkpoint_round_trip_restores_model_and_optimizer(tmp_path: object) ->
     payload = load_checkpoint(path)
     restore_checkpoint(payload, model=restored, expected_model_name="contract", expected_schema=DEFAULT_LABEL_SCHEMA)
     assert float(restored.scale.detach()) == 3.0
+
+
+def test_checkpoint_rejects_manifest_mismatch(tmp_path: object) -> None:
+    model = ContractInstanceModel()
+    path = tmp_path / "checkpoint.pt"  # type: ignore[operator]
+    save_checkpoint(
+        path,
+        model=model,
+        model_name="contract",
+        optimizer=None,
+        scheduler=None,
+        epoch=1,
+        best_metric=0.0,
+        best_epoch=1,
+        label_schema=DEFAULT_LABEL_SCHEMA,
+        config=AppConfig(),
+        manifest_hashes={"train": "a", "valid": "b", "test": "c"},
+    )
+    payload = load_checkpoint(path)
+    with pytest.raises(CheckpointError, match="manifest hashes"):
+        restore_checkpoint(
+            payload,
+            model=model,
+            expected_model_name="contract",
+            expected_schema=DEFAULT_LABEL_SCHEMA,
+            expected_manifest_hashes={"train": "changed", "valid": "b", "test": "c"},
+        )
 
 
 def test_checkpoint_rejects_schema_mismatch(tmp_path: object) -> None:

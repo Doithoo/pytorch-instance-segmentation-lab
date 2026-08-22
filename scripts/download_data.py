@@ -41,6 +41,7 @@ def download_penn_fudan(data_dir: str | Path, manifest_dir: str | Path) -> Path:
         _safe_extract(archive, root)
         _validate_extracted(extracted)
     _write_source_metadata(archive, manifest_dir)
+    _write_download_receipt(archive)
     return extracted
 
 
@@ -108,9 +109,17 @@ def _write_source_metadata(archive: Path, manifest_dir: str | Path) -> None:
         "archive_name": PENN_FUDAN_ARCHIVE_NAME,
         "archive_sha256": PENN_FUDAN_ARCHIVE_SHA256,
         "archive_bytes": archive.stat().st_size,
-        "downloaded_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
     output.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
+
+
+def _write_download_receipt(archive: Path) -> None:
+    receipt = {
+        "archive_sha256": PENN_FUDAN_ARCHIVE_SHA256,
+        "archive_bytes": archive.stat().st_size,
+        "downloaded_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    archive.with_suffix(".receipt.yaml").write_text(yaml.safe_dump(receipt, sort_keys=False), encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:

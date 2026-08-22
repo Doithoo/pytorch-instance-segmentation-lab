@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from torch import nn
-from torchvision.models.detection import maskrcnn_resnet50_fpn
+from torchvision.models import MobileNet_V3_Large_Weights, mobilenet_v3_large
+from torchvision.models.detection import MaskRCNN, maskrcnn_resnet50_fpn
+from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
+from torchvision.ops import MultiScaleRoIAlign
 
 
 def build_maskrcnn_resnet50_fpn(num_classes: int, weights: str, params: Mapping[str, object]) -> nn.Module:
@@ -40,6 +43,33 @@ def build_maskrcnn_resnet50_fpn_v2(num_classes: int, weights: str, params: Mappi
         model = constructor(weights=weights_enum.COCO_V1, **kwargs)
         return _replace_predictors(model, num_classes)
     raise ValueError(f"unsupported maskrcnn_resnet50_fpn_v2 weight policy {weights!r}")
+
+
+def build_maskrcnn_mobilenet_v3_large(num_classes: int, weights: str, params: Mapping[str, object]) -> nn.Module:
+    """Build a single-feature-map Mask R-CNN with an ImageNet MobileNetV3 backbone."""
+    _validate_num_classes(num_classes)
+    if weights == "none":
+        backbone_weights = None
+    elif weights == "imagenet_v2":
+        backbone_weights = MobileNet_V3_Large_Weights.IMAGENET1K_V2
+    else:
+        raise ValueError(f"unsupported maskrcnn_mobilenet_v3_large weight policy {weights!r}")
+    backbone = mobilenet_v3_large(weights=backbone_weights).features
+    backbone.out_channels = 960
+    anchors = AnchorGenerator(
+        sizes=((32, 64, 128, 256, 512),),
+        aspect_ratios=((0.5, 1.0, 2.0),),
+    )
+    box_pool = MultiScaleRoIAlign(featmap_names=["0"], output_size=7, sampling_ratio=2)
+    mask_pool = MultiScaleRoIAlign(featmap_names=["0"], output_size=14, sampling_ratio=2)
+    return MaskRCNN(
+        backbone,
+        num_classes=num_classes,
+        rpn_anchor_generator=anchors,
+        box_roi_pool=box_pool,
+        mask_roi_pool=mask_pool,
+        **dict(params),
+    )
 
 
 def _replace_predictors(model: nn.Module, num_classes: int) -> nn.Module:

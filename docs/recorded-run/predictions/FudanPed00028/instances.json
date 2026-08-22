@@ -1,0 +1,35 @@
+{
+  "image": "/kaggle/working/data/PennFudanPed/PNGImages/FudanPed00028.png",
+  "score_threshold": 0.5,
+  "mask_threshold": 0.5,
+  "instances": [
+    {
+      "instance_id": 1,
+      "label_id": 1,
+      "label": "person",
+      "score": 0.999454915523529,
+      "box_xyxy": [
+        180.51333618164062,
+        25.062183380126953,
+        315.9972229003906,
+        322.2525329589844
+      ],
+      "mask_path": "masks/instance-001.png",
+      "mask_encoding": "binary-png-thresholded"
+    },
+    {
+      "instance_id": 2,
+      "label_id": 1,
+      "label": "person",
+      "score": 0.9988195300102234,
+      "box_xyxy": [
+        8.412440299987793,
+        16.325132369995117,
+        147.1827392578125,
+        299.80609130859375
+      ],
+      "mask_path": "masks/instance-002.png",
+      "mask_encoding": "binary-png-thresholded"
+    }
+  ]
+}

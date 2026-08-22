@@ -7,7 +7,7 @@ import hashlib
 import json
 import os
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,9 @@ from instance_segmenter.data.schema import DEFAULT_LABEL_SCHEMA, LabelSchema
 
 PENN_FUDAN_DATASET_ROOT = "PennFudanPed"
 PENN_FUDAN_SPLIT_COUNTS = {"train": 136, "valid": 17, "test": 17}
+MANIFEST_FORMAT_VERSION = 2
+DEFAULT_SPLIT_SEED = 42
+SPLIT_STRATEGY = "source-stratified-sha256-v2"
 MANIFEST_FIELDS = (
     "image_id",
     "image_path",
@@ -82,6 +85,10 @@ class DatasetMetadata:
     image_width_range: tuple[int, int]
     image_height_range: tuple[int, int]
     instance_count_range: tuple[int, int]
+    manifest_format_version: int = MANIFEST_FORMAT_VERSION
+    split_strategy: str = SPLIT_STRATEGY
+    split_seed: int = DEFAULT_SPLIT_SEED
+    provider_metadata: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -94,6 +101,10 @@ class DatasetMetadata:
             "image_width_range": list(self.image_width_range),
             "image_height_range": list(self.image_height_range),
             "instance_count_range": list(self.instance_count_range),
+            "manifest_format_version": self.manifest_format_version,
+            "split_strategy": self.split_strategy,
+            "split_seed": self.split_seed,
+            "provider_metadata": self.provider_metadata,
         }
 
     @classmethod
@@ -109,8 +120,9 @@ class DatasetMetadata:
             "image_height_range",
             "instance_count_range",
         }
-        if set(raw) != required:
-            raise ManifestError(f"dataset metadata fields must be {sorted(required)}")
+        optional = {"manifest_format_version", "split_strategy", "split_seed", "provider_metadata"}
+        if required - set(raw) or set(raw) - required - optional:
+            raise ManifestError(f"dataset metadata requires {sorted(required)} and allows {sorted(optional)}")
         try:
             metadata = cls(
                 dataset_name=str(raw["dataset_name"]),
@@ -122,11 +134,19 @@ class DatasetMetadata:
                 image_width_range=tuple(raw["image_width_range"]),
                 image_height_range=tuple(raw["image_height_range"]),
                 instance_count_range=tuple(raw["instance_count_range"]),
+                manifest_format_version=int(raw.get("manifest_format_version", 1)),
+                split_strategy=str(raw.get("split_strategy", "legacy-lexicographic-v1")),
+                split_seed=int(raw.get("split_seed", 0)),
+                provider_metadata=dict(raw.get("provider_metadata", {})),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise ManifestError(f"invalid dataset metadata: {exc}") from exc
         if metadata.split_counts.keys() != PENN_FUDAN_SPLIT_COUNTS.keys():
             raise ManifestError("metadata must contain train, valid, and test counts")
+        if metadata.manifest_format_version < 1 or metadata.split_seed < 0 or not metadata.split_strategy:
+            raise ManifestError("metadata split provenance is invalid")
+        if not isinstance(metadata.provider_metadata, dict):
+            raise ManifestError("metadata provider_metadata must be a mapping")
         return metadata
 
 
@@ -148,6 +168,7 @@ def prepare_penn_fudan(
     manifest_dir: str | Path,
     *,
     expected_total: int | None = 170,
+    split_seed: int = DEFAULT_SPLIT_SEED,
 ) -> DatasetMetadata:
     """Validate Penn-Fudan sources and atomically write deterministic manifests."""
     data_root = Path(data_dir) / PENN_FUDAN_DATASET_ROOT
@@ -158,7 +179,7 @@ def prepare_penn_fudan(
     pairs = _discover_pairs(data_root, image_dir, mask_dir)
     if expected_total is not None and len(pairs) != expected_total:
         raise ManifestError(f"expected {expected_total} Penn-Fudan pairs, found {len(pairs)}")
-    splits = _split_pairs(pairs, expected_total=expected_total)
+    splits = _split_pairs(pairs, expected_total=expected_total, seed=split_seed)
     output = Path(manifest_dir)
     output.mkdir(parents=True, exist_ok=True)
     for split, rows in splits.items():
@@ -175,6 +196,9 @@ def prepare_penn_fudan(
         image_width_range=(min(row.width for row in all_rows), max(row.width for row in all_rows)),
         image_height_range=(min(row.height for row in all_rows), max(row.height for row in all_rows)),
         instance_count_range=(min(row.instance_count for row in all_rows), max(row.instance_count for row in all_rows)),
+        manifest_format_version=MANIFEST_FORMAT_VERSION,
+        split_strategy=SPLIT_STRATEGY,
+        split_seed=split_seed,
     )
     _write_yaml(output / "dataset.yaml", metadata.to_dict())
     return metadata
@@ -208,15 +232,26 @@ def load_dataset_metadata(manifest_dir: str | Path) -> DatasetMetadata:
     return DatasetMetadata.from_dict(raw)
 
 
+def verify_manifest_hashes(manifest_dir: str | Path, expected_hashes: dict[str, str]) -> None:
+    """Reject a changed or incomplete split definition without scanning source images."""
+    expected_splits = set(PENN_FUDAN_SPLIT_COUNTS)
+    if set(expected_hashes) != expected_splits:
+        raise ManifestError(f"manifest hashes must contain {sorted(expected_splits)}")
+    for split, expected in expected_hashes.items():
+        path = Path(manifest_dir) / f"{split}.csv"
+        if sha256_file(path) != expected:
+            raise ManifestError(f"manifest hash mismatch for {split}: {path}")
+
+
 def verify_prepared_data(data_dir: str | Path, manifest_dir: str | Path) -> DatasetMetadata:
     """Revalidate source bytes, image dimensions, and masks against all manifests."""
     metadata = load_dataset_metadata(manifest_dir)
     root = Path(data_dir) / metadata.dataset_root
     total_ids: set[str] = set()
+    verified_annotations: dict[Path, str] = {}
+    verify_manifest_hashes(manifest_dir, metadata.split_hashes)
     for split, expected_count in metadata.split_counts.items():
         path = Path(manifest_dir) / f"{split}.csv"
-        if sha256_file(path) != metadata.split_hashes[split]:
-            raise ManifestError(f"manifest hash mismatch for {split}: {path}")
         rows = read_manifest(path)
         if len(rows) != expected_count:
             raise ManifestError(f"manifest count mismatch for {split}")
@@ -224,7 +259,10 @@ def verify_prepared_data(data_dir: str | Path, manifest_dir: str | Path) -> Data
             if row.image_id in total_ids:
                 raise ManifestError(f"duplicate image ID across splits: {row.image_id}")
             total_ids.add(row.image_id)
-            _verify_row(root, row)
+            if metadata.dataset_name == "coco":
+                _verify_coco_row(root, row, verified_annotations)
+            else:
+                _verify_row(root, row)
     if metadata.dataset_name == "pennfudan" and metadata.split_counts != PENN_FUDAN_SPLIT_COUNTS:
         raise ManifestError(f"Penn-Fudan split counts must be {PENN_FUDAN_SPLIT_COUNTS}")
     return metadata
@@ -270,21 +308,75 @@ def _discover_pairs(data_root: Path, image_dir: Path, mask_dir: Path) -> list[Ma
     return rows
 
 
-def _split_pairs(rows: list[ManifestRow], *, expected_total: int | None) -> dict[str, list[ManifestRow]]:
+def _split_pairs(rows: list[ManifestRow], *, expected_total: int | None, seed: int) -> dict[str, list[ManifestRow]]:
+    total = len(rows)
     if expected_total == 170:
-        boundaries = (136, 153)
+        targets = dict(PENN_FUDAN_SPLIT_COUNTS)
     else:
-        total = len(rows)
         train = max(1, int(total * 0.8))
         valid = max(1, int(total * 0.1))
         if train + valid >= total:
             raise ManifestError("need at least three source pairs to create non-empty splits")
-        boundaries = (train, train + valid)
-    train_end, valid_end = boundaries
-    splits = {"train": rows[:train_end], "valid": rows[train_end:valid_end], "test": rows[valid_end:]}
+        targets = {"train": train, "valid": valid, "test": total - train - valid}
+
+    groups: dict[str, list[ManifestRow]] = {}
+    for row in rows:
+        groups.setdefault(_source_group(row.image_id), []).append(row)
+    splits: dict[str, list[ManifestRow]] = {name: [] for name in targets}
+    remaining = dict(targets)
+    ordered_groups = sorted(groups.items())
+    for group_index, (_, group_rows) in enumerate(ordered_groups):
+        ordered = sorted(group_rows, key=lambda row: _split_key(row.image_id, seed))
+        if group_index == len(ordered_groups) - 1:
+            allocations = remaining
+        else:
+            allocations = {
+                "train": round(len(ordered) * targets["train"] / total),
+                "valid": round(len(ordered) * targets["valid"] / total),
+            }
+            allocations["test"] = len(ordered) - allocations["train"] - allocations["valid"]
+        start = 0
+        for split in ("train", "valid", "test"):
+            count = allocations[split]
+            splits[split].extend(ordered[start : start + count])
+            remaining[split] -= count
+            start += count
+    if any(remaining.values()) or any(len(splits[name]) != targets[name] for name in targets):
+        raise ManifestError("source-stratified split allocation did not meet target counts")
     if any(not values for values in splits.values()):
         raise ManifestError("all dataset splits must be non-empty")
-    return splits
+    return {
+        split: sorted(values, key=lambda row: _split_key(f"{split}:{row.image_id}", seed))
+        for split, values in splits.items()
+    }
+
+
+def _source_group(image_id: str) -> str:
+    group = image_id.rstrip("0123456789")
+    return group or image_id
+
+
+def _split_key(image_id: str, seed: int) -> str:
+    return hashlib.sha256(f"{seed}:{image_id}".encode()).hexdigest()
+
+
+def _verify_coco_row(data_root: Path, row: ManifestRow, annotation_hashes: dict[Path, str]) -> None:
+    image_path = data_root / row.image_path
+    annotation_path = data_root / row.mask_path
+    if not image_path.is_file() or not annotation_path.is_file():
+        raise ManifestError(f"COCO source file missing for {row.image_id}")
+    actual_annotation_hash = annotation_hashes.get(annotation_path)
+    if actual_annotation_hash is None:
+        actual_annotation_hash = sha256_file(annotation_path)
+        annotation_hashes[annotation_path] = actual_annotation_hash
+    if sha256_file(image_path) != row.image_sha256 or actual_annotation_hash != row.mask_sha256:
+        raise ManifestError(f"source file hash mismatch for {row.image_id}")
+    try:
+        with Image.open(image_path) as image:
+            if image.size != (row.width, row.height):
+                raise ManifestError(f"image dimensions changed for {row.image_id}")
+    except OSError as exc:
+        raise ManifestError(f"cannot decode image {row.image_id}: {exc}") from exc
 
 
 def _verify_row(data_root: Path, row: ManifestRow) -> None:
@@ -314,7 +406,7 @@ def _write_csv(path: Path, rows: list[ManifestRow]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with _temporary_file(path) as temporary:
         with temporary.open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=MANIFEST_FIELDS)
+            writer = csv.DictWriter(handle, fieldnames=MANIFEST_FIELDS, lineterminator="\n")
             writer.writeheader()
             writer.writerows(row.to_mapping() for row in rows)
         os.replace(temporary, path)

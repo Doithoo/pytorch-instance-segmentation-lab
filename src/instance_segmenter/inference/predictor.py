@@ -15,6 +15,7 @@ from torchvision.transforms.functional import pil_to_tensor
 from instance_segmenter.config import AppConfig, config_from_dict
 from instance_segmenter.data.schema import LabelSchema
 from instance_segmenter.evaluation.visualization import save_overlay
+from instance_segmenter.inference.output import normalize_prediction
 from instance_segmenter.models.extensions import load_external_model
 from instance_segmenter.models.registry import build_model
 from instance_segmenter.training.checkpoint import load_checkpoint, restore_checkpoint
@@ -66,7 +67,7 @@ class Predictor:
             outputs = self.model([image.to(self.device)])
         if not isinstance(outputs, list) or len(outputs) != 1:
             raise RuntimeError("model prediction must return one output dictionary")
-        prediction = _threshold_output(outputs[0], score_threshold, mask_threshold)
+        prediction = normalize_prediction(outputs[0], score_threshold=score_threshold, mask_threshold=mask_threshold)
         destination = Path(output_dir)
         if destination.exists():
             if not overwrite:
@@ -138,24 +139,3 @@ def _read_image(path: Path) -> torch.Tensor:
             return pil_to_tensor(source.convert("RGB")).to(torch.float32).div(255.0)
     except OSError as exc:
         raise ValueError(f"cannot read image {path}: {exc}") from exc
-
-
-def _threshold_output(output: object, score_threshold: float, mask_threshold: float) -> dict[str, torch.Tensor]:
-    if not isinstance(output, dict):
-        raise RuntimeError("model prediction must be a dictionary")
-    required = {"boxes", "labels", "scores", "masks"}
-    if required - set(output):
-        raise RuntimeError(f"model prediction misses fields: {sorted(required - set(output))}")
-    boxes = output["boxes"].detach().cpu()
-    labels = output["labels"].detach().cpu()
-    scores = output["scores"].detach().cpu()
-    masks = output["masks"].detach().cpu()
-    if masks.ndim == 4 and masks.shape[1] == 1:
-        masks = masks[:, 0]
-    keep = scores >= score_threshold
-    return {
-        "boxes": boxes[keep].to(torch.float32),
-        "labels": labels[keep].to(torch.int64),
-        "scores": scores[keep].to(torch.float32),
-        "masks": (masks[keep] >= mask_threshold),
-    }

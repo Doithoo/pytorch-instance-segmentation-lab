@@ -1,23 +1,31 @@
 {
+  "analysis_score_threshold": 0.5,
   "class_names": {
     "0": "background",
     "1": "person"
   },
+  "dataset_identity": "64bfbd3df4c33b089e2c8710795f43bd21c856ff7001747447ab9849af7b48d8",
   "image_count": 17,
   "mask_threshold": 0.5,
   "metric_backend": "torchmetrics.MeanAveragePrecision with pycocotools",
+  "metric_protocol": "COCO confidence ranking; no display-threshold filtering",
+  "metric_score_floor": 0.0,
   "metrics": {
-    "bbox_map": 0.8915790915489197,
+    "bbox_map": 0.8464389443397522,
     "bbox_map_50": 1.0,
-    "bbox_map_75": 1.0,
-    "bbox_mar_100": 0.9114285707473755,
-    "mask_map": 0.791271448135376,
+    "bbox_map_75": 0.9351752996444702,
+    "bbox_mar_100": 0.8725000023841858,
+    "mask_map": 0.7560926079750061,
     "mask_map_50": 1.0,
-    "mask_map_75": 0.9660537242889404,
-    "mask_mar_100": 0.8114285469055176
+    "mask_map_75": 0.8553368449211121,
+    "mask_mar_100": 0.7825000286102295
   },
-  "prediction_count": 37,
-  "score_threshold": 0.5,
+  "prediction_count": 54,
   "split": "test",
-  "target_count": 35
+  "split_hashes": {
+    "test": "d7e7329286b78605befebc3695398b8252658764da6bbdf1cf6de12270ca9d28",
+    "train": "973758fcdc6360871478bfe225af5bae0eb8f30166d2ccd3600fa55e815d598d",
+    "valid": "44214e452f7597d07e9fde1dde56e26706333e3039635a6a20ba6bf1868aa40f"
+  },
+  "target_count": 40
 }

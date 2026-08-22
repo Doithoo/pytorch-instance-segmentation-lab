@@ -5,7 +5,7 @@ from instance_segmenter.cli import main
 
 
 def test_version_is_exposed() -> None:
-    assert __version__ == "0.1.0"
+    assert __version__ == "0.2.0"
 
 
 def test_cli_accepts_empty_arguments() -> None:

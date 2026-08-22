@@ -1,30 +1,41 @@
-# Kaggle 参考训练记录
+# Kaggle 协议 v2 参考训练
 
-[English](README.md) | [Kaggle 流程](../guides/kaggle.zh-CN.md) | [参考配置](../../configs/reference_maskrcnn.yaml)
+[English](README.md) | [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) | [流程](../guides/kaggle.zh-CN.md) | [ADR 0002](../architecture/0002-evaluation-and-splits.zh-CN.md)
 
-强制参考运行已在 [Kaggle Tesla T4](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) 成功完成。它使用提交的 Penn-Fudan `136/17/17` 划分、COCO 初始化的 torchvision Mask R-CNN ResNet-50 FPN、CUDA AMP 和全部 20 个 epoch。第 13 轮由验证集 `mask_map` 选出，随后仅用 `best.pt` 在留出的 test split 评估一次。
+状态：`COMPLETE_PROTOCOL_V2`
 
-| 项目 | 结果 |
+替代训练已在 Kaggle Tesla T4 完成全部 20 epoch，使用按来源分层的 manifests 和保留完整置信度排序的 COCO AP。第 10 轮只由验证集 `mask_map` 选出，随后在固定 17 张 test 图片上评估一次。
+
+| 协议 v2 项目 | 结果 |
 |---|---:|
-| 最佳验证 mask AP | 0.795231 |
-| 测试 mask AP / AP50 / AP75 | **0.791271** / 1.000000 / 0.966054 |
-| 测试 bbox AP / AP50 / AP75 | **0.891579** / 1.000000 / 1.000000 |
-| 测试 mask AR@100 / bbox AR@100 | 0.811429 / 0.911429 |
-| 测试图片 / 目标 / 预测 | 17 / 35 / 37 |
-| 训练 / test 评估 | 525.500s / 6.251s |
-| Kaggle 任务总时间 | 570.792s |
+| 最佳验证 mask AP | **0.766694** |
+| 测试 mask AP / AP50 / AP75 | **0.756093** / 1.000000 / 0.855337 |
+| 测试 bbox AP / AP50 / AP75 | **0.846439** / 1.000000 / 0.935175 |
+| 测试 mask AR@100 / bbox AR@100 | 0.782500 / 0.872500 |
+| 测试图片 / 目标 / 指标预测 | 17 / 40 / 54 |
+| score 0.5 下分析预测 / FP / FN | 45 / 5 / 0 |
+| 训练 / 评估 / 总耗时 | 537.431s / 4.609s / 585.735s |
 
-![Penn-Fudan 数据集预览](assets/dataset-preview.png)
+![按来源分层的 Penn-Fudan 预览](assets/dataset-preview.png)
+
+## 排序后的错误分析
+
+评估器为 AP 保留全部预测，同时单独使用 score 0.5 生成可读错误分析。排名最高的样本包含 6 个匹配目标和 3 个额外预测；分析阈值下 40 个 test 目标全部被匹配。
+
+![协议 v2 最差样本预测](evaluation/visualizations/worst-01-96415228031564514-prediction.png)
+
+真实单图预测、JSON 记录和二值 mask 位于 [`predictions/FudanPed00028/`](predictions/FudanPed00028/)。
 
 ## 可审计产物
 
-- [`config.yaml`](config.yaml)：Kaggle 实际路径、`cuda`、AMP、两个 worker 和完整 20 epoch。
-- [`run.yaml`](run.yaml)：环境、split/source identity、耗时和 checkpoint hash。
-- [`metrics.csv`](metrics.csv)：全部 20 轮训练/验证指标。
-- [`kaggle-run-summary.json`](kaggle-run-summary.json)：runner 写入的未舍入最终数值。
-- [`evaluation/evaluation.json`](evaluation/evaluation.json)、[`per_class.csv`](evaluation/per_class.csv)、[`per_image.csv`](evaluation/per_image.csv)：最终 test 结果。
-- [`evaluation/visualizations/`](evaluation/visualizations/)：4 组 test 图片标注/预测对照。
-- [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py)：本次记录实际提交的生成 runner，内嵌 archive SHA-256 为 `c96eef...71d91`。
-- [`kaggle/run_kaggle.py`](kaggle/run_kaggle.py)：当前重新生成的 runner，下一次提交前由 CI 检查新鲜度。
+- [`run.yaml`](run.yaml)：协议、环境、耗时、指标、identity 与 hash 汇总。
+- [`MODEL_CARD.md`](MODEL_CARD.md)：用途、限制、checkpoint 位置与安全说明。
+- [`config.yaml`](config.yaml)：Kaggle 实际路径、CUDA AMP 和阈值。
+- [`environment.json`](environment.json)、[`events.jsonl`](events.jsonl)、[`metrics.csv`](metrics.csv)：结构化 provenance 和全部 20 epoch。
+- [`kaggle-run-summary.json`](kaggle-run-summary.json)：runner 写入的未舍入结果。
+- [`evaluation/`](evaluation/)：JSON、逐类/逐图 CSV，以及 4 组排序后的标注/预测图。
+- [`kaggle/run_kaggle-v2.py`](kaggle/run_kaggle-v2.py)：本次 version 2 精确提交 runner，内嵌 archive SHA-256 为 `41fa5e...b24a`。
+- [`kaggle/run_kaggle.py`](kaggle/run_kaggle.py)：未来提交使用的当前生成 runner。
+- [`legacy-v1/`](legacy-v1/)：保留的旧版 score-filtered 运行与报告。
 
-335 MB 的 `best.pt`、`last.pt`、原始数据和完整 prediction cache 不进入仓库，应从 Kaggle kernel output 下载。被评估的 `best.pt` SHA-256 为 `af68b78d28b7b063e6932adc307a4db5f61f506409e88b9871447d45893bee6b`。
+334.8 MB 的 `best.pt` 和 `last.pt` 保留在私有 Kaggle kernel output。已验证 SHA-256 分别为 `1c28ed12...b3d57` 和 `bda01afe...2ad1`，只能作为可信 checkpoint 加载。

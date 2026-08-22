@@ -20,10 +20,10 @@ split_counts:
   valid: 17
   test: 17
 split_hashes:
-  train: 875f24b8d1e01669c9419352b16ea9d5ccaf3bc08814ed0f31757f9cb80ec547
-  valid: 8700e0f47f72bd4aa875d924fc5aa6431b798f27131a27941ca029fb310c7463
-  test: e9398a9b09b5a27a8c0ce9b6bae1ec820103cbcd04056343d4c58a040a664af9
-identity: a9c1ea7e47ad9df640f7df33c7ebf617da027cce3c1b847fd406797a813b4b99
+  train: 973758fcdc6360871478bfe225af5bae0eb8f30166d2ccd3600fa55e815d598d
+  valid: 44214e452f7597d07e9fde1dde56e26706333e3039635a6a20ba6bf1868aa40f
+  test: d7e7329286b78605befebc3695398b8252658764da6bbdf1cf6de12270ca9d28
+identity: 64bfbd3df4c33b089e2c8710795f43bd21c856ff7001747447ab9849af7b48d8
 image_width_range:
 - 253
 - 1017
@@ -33,3 +33,7 @@ image_height_range:
 instance_count_range:
 - 1
 - 8
+manifest_format_version: 2
+split_strategy: source-stratified-sha256-v2
+split_seed: 42
+provider_metadata: {}

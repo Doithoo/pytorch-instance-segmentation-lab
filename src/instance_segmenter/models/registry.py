@@ -4,11 +4,20 @@ from __future__ import annotations
 
 from instance_segmenter.models.spec import ModelSpec
 from instance_segmenter.models.torchvision_models import (
+    build_maskrcnn_mobilenet_v3_large,
     build_maskrcnn_resnet50_fpn,
     build_maskrcnn_resnet50_fpn_v2,
 )
 
 _REGISTRY: dict[str, ModelSpec] = {
+    "maskrcnn_mobilenet_v3_large": ModelSpec(
+        name="maskrcnn_mobilenet_v3_large",
+        factory=build_maskrcnn_mobilenet_v3_large,
+        description="Educational Mask R-CNN with a lightweight MobileNetV3-Large backbone.",
+        supported_weights=("none", "imagenet_v2"),
+        input_notes=("Uses one backbone feature map and custom anchors/ROI pooling.",),
+        parameters={"min_size": "Optional shortest side.", "max_size": "Optional longest side."},
+    ),
     "maskrcnn_resnet50_fpn": ModelSpec(
         name="maskrcnn_resnet50_fpn",
         factory=build_maskrcnn_resnet50_fpn,

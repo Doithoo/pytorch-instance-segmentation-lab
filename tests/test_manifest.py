@@ -28,6 +28,18 @@ def test_prepare_writes_stable_136_17_17_manifests(tmp_path: object) -> None:
     assert verify_prepared_data(data_dir, manifest_dir).identity == first.identity
 
 
+def test_source_stratification_keeps_both_domains_in_every_split(tmp_path: object) -> None:
+    data_dir = tmp_path / "raw"  # type: ignore[operator]
+    manifest_dir = tmp_path / "manifests"  # type: ignore[operator]
+    create_fake_penn_fudan(data_dir, source_groups=True)
+    metadata = prepare_penn_fudan(data_dir, manifest_dir)
+    assert metadata.manifest_format_version == 2
+    assert metadata.split_strategy == "source-stratified-sha256-v2"
+    for split in PENN_FUDAN_SPLIT_COUNTS:
+        prefixes = {row.image_id.rstrip("0123456789") for row in read_manifest(manifest_dir / f"{split}.csv")}
+        assert prefixes == {"FudanPed", "PennPed"}
+
+
 def test_manifest_detects_changed_source_bytes(tmp_path: object) -> None:
     data_dir = tmp_path / "raw"  # type: ignore[operator]
     manifest_dir = tmp_path / "manifests"  # type: ignore[operator]
@@ -53,5 +65,5 @@ def test_dataset_rebuilds_instance_target_from_prepared_manifest(tmp_path: objec
     assert load_dataset_metadata(manifest_dir).label_schema.num_classes == 2
 
 
-def test_pennfudan_is_the_registered_provider() -> None:
-    assert list_datasets() == ("pennfudan",)
+def test_built_in_dataset_providers_are_registered() -> None:
+    assert list_datasets() == ("coco", "pennfudan")

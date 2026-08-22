@@ -8,6 +8,12 @@ def test_registry_exposes_stable_maskrcnn_names() -> None:
     assert get_model_spec("maskrcnn_resnet50_fpn").supported_weights == ("none", "coco_v1")
 
 
+def test_lightweight_maskrcnn_replaces_both_heads() -> None:
+    model = build_model("maskrcnn_mobilenet_v3_large", 3, "none", {"min_size": 64, "max_size": 64})
+    assert model.roi_heads.box_predictor.cls_score.out_features == 3
+    assert model.roi_heads.mask_predictor.mask_fcn_logits.out_channels == 3
+
+
 def test_maskrcnn_replaces_both_predictors_for_label_schema() -> None:
     model = build_model("maskrcnn_resnet50_fpn", 2, "none", {"min_size": 64, "max_size": 64})
     assert model.roi_heads.box_predictor.cls_score.out_features == 2

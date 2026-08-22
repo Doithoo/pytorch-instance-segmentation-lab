@@ -1,6 +1,6 @@
 # ADR-0001: PyTorch Instance Segmentation Lab
 
-Status: planned. The Chinese document is the canonical implementation specification:
+Status: implemented for v0.1.0; evaluation and split decisions are amended by [ADR 0002](0002-evaluation-and-splits.md). The Chinese document preserves the original implementation specification:
 
 [`0001-instance-segmentation-lab.zh-CN.md`](0001-instance-segmentation-lab.zh-CN.md)
 

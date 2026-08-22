@@ -29,6 +29,7 @@ training:
   amp: false
   grad_clip_norm: null
   best_metric: mask_map
+  evaluation_score_floor: 0.0
   score_threshold: 0.5
   mask_threshold: 0.5
   evaluate_every: 1

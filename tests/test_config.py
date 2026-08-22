@@ -22,6 +22,12 @@ def test_unknown_config_field_is_rejected(tmp_path: object) -> None:
         load_config(path)
 
 
+def test_mobile_config_uses_model_specific_weight_policy() -> None:
+    config = load_config("configs/maskrcnn_mobilenet_v3_large.yaml")
+    assert config.model.name == "maskrcnn_mobilenet_v3_large"
+    assert config.model.weights == "imagenet_v2"
+
+
 def test_reference_config_has_kaggle_training_contract() -> None:
     config = load_config("configs/reference_maskrcnn.yaml")
     assert config.training.epochs == 20
