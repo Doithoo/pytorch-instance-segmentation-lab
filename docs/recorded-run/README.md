@@ -24,7 +24,7 @@ The evaluator retained all predictions for AP and separately used score 0.5 for 
 
 ![Worst-case protocol-v2 prediction](evaluation/visualizations/worst-01-96415228031564514-prediction.png)
 
-A real single-image prediction, its JSON records, and binary masks are available under [`predictions/FudanPed00028/`](predictions/FudanPed00028/).
+A real single-image prediction, its JSON records, and binary masks are available under [`predictions/FudanPed00028/`](predictions/FudanPed00028/instances.json).
 
 ## Auditable artifacts
 
@@ -33,9 +33,9 @@ A real single-image prediction, its JSON records, and binary masks are available
 - [`config.yaml`](config.yaml): exact resolved Kaggle paths, CUDA AMP, and thresholds.
 - [`environment.json`](environment.json), [`events.jsonl`](events.jsonl), and [`metrics.csv`](metrics.csv): structured provenance and all 20 epochs.
 - [`kaggle-run-summary.json`](kaggle-run-summary.json): unrounded runner output.
-- [`evaluation/`](evaluation/): JSON, per-class/per-image CSV, and four ranked ground-truth/prediction pairs.
+- [`evaluation/`](evaluation/evaluation.json): JSON, per-class/per-image CSV, and four ranked ground-truth/prediction pairs.
 - [`kaggle/run_kaggle-v2.py`](kaggle/run_kaggle-v2.py): exact submitted version-2 runner; embedded archive SHA-256 `41fa5e...b24a`.
 - [`kaggle/run_kaggle.py`](kaggle/run_kaggle.py): current generated runner for future submissions.
-- [`legacy-v1/`](legacy-v1/): preserved superseded score-filtered run and reports.
+- [`legacy-v1/`](legacy-v1/README.md): preserved superseded score-filtered run and reports.
 
 The 334.8 MB `best.pt` and `last.pt` remain in the private Kaggle kernel output. Verified SHA-256 values are `1c28ed12...b3d57` and `bda01afe...2ad1`. Load them only as trusted checkpoints.

@@ -1,9 +1,13 @@
 # Examples
 
-Run examples from the repository root with `uv run python examples/<file>.py`.
+Run examples from the repository root with `uv run python examples/<file>.py`. Each program demonstrates one contract and avoids duplicating the full trainer.
 
-1. `01_instance_target.py`: boxes, labels, independent masks, and area.
-2. `02_mask_to_instances.py`: sparse instance IDs are not merged.
-3. `03_detection_collate.py`: variable image and instance counts remain lists.
-4. `04_minimal_training_loop.py`: a contract model completes one update.
-5. `05_checkpoint_prediction.py`: a checkpoint creates JSON, masks, and overlay.
+| Example | Focus | Expected lesson |
+| --- | --- | --- |
+| `01_instance_target.py` | Boxes, labels, masks, area | The six target fields are aligned and typed |
+| `02_mask_to_instances.py` | Indexed masks | Sparse IDs and touching instances remain separate |
+| `03_detection_collate.py` | Batching | Variable image sizes/counts stay in lists |
+| `04_minimal_training_loop.py` | Training contract | A model can complete one real update |
+| `05_checkpoint_prediction.py` | Inference artifacts | JSON, binary masks, and an overlay form one result |
+
+The extension examples in [`extensions/`](extensions/) show the trusted dataset and model factory shapes. Use them as test fixtures and starting points, not as a replacement for registering a supported provider/model.

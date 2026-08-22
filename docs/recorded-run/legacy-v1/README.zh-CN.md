@@ -2,7 +2,7 @@
 
 > **已被替代：** 本次运行在 AP 计算前删除 score 小于 `0.5` 的预测，并使用旧版按文件名连续切分的数据。数值仅作历史记录，不是协议 v2 基线。原因见 [ADR 0002](../../architecture/0002-evaluation-and-splits.zh-CN.md)。
 
-[English](README.md) | [Kaggle 流程](../../guides/kaggle.zh-CN.md) | [参考配置](../../../configs/reference_maskrcnn.yaml)
+[English](README.md) | [Kaggle 流程](../../guides/kaggle.zh-CN.md) | [参考配置](https://github.com/Doithoo/pytorch-instance-segmentation-lab/blob/main/configs/reference_maskrcnn.yaml)
 
 最初的 20 epoch 运行已在 [Kaggle Tesla T4](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) 完成，证明了 GPU 全流程、checkpoint 选取和产物记录可以正常执行。下列数值使用协议 v1，不能与保留完整预测排序的标准 COCO AP 直接比较。
 
@@ -25,7 +25,7 @@
 - [`metrics.csv`](metrics.csv)：全部 20 轮训练/验证指标。
 - [`kaggle-run-summary.json`](kaggle-run-summary.json)：runner 写入的未舍入最终数值。
 - [`evaluation/evaluation.json`](evaluation/evaluation.json)、[`per_class.csv`](evaluation/per_class.csv)、[`per_image.csv`](evaluation/per_image.csv)：最终 test 结果。
-- [`evaluation/visualizations/`](evaluation/visualizations/)：4 组 test 图片标注/预测对照。
+- [`evaluation/visualizations/`](evaluation/visualizations/4550134779599368474-ground-truth.png)：4 组 test 图片标注/预测对照。
 - [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py)：本次记录实际提交的生成 runner，内嵌 archive SHA-256 为 `c96eef...71d91`。
 - [`../kaggle/run_kaggle.py`](../kaggle/run_kaggle.py)：未来提交使用的当前生成 runner。
 

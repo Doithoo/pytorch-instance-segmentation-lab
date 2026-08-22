@@ -1,0 +1,100 @@
+site_name: PyTorch Instance Segmentation Lab
+site_description: Reproducible, beginner-oriented PyTorch instance segmentation
+repo_url: https://github.com/Doithoo/pytorch-instance-segmentation-lab
+repo_name: Doithoo/pytorch-instance-segmentation-lab
+docs_dir: docs
+site_dir: build/site
+strict: true
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+nav:
+  - Home: README.md
+  - 中文首页: README.zh-CN.md
+  - Tutorial:
+      - Overview: tutorial/README.md
+      - Basics: tutorial/00-basics.md
+      - Environment: tutorial/01-environment.md
+      - Data and instances: tutorial/02-data-and-instances.md
+      - Mask R-CNN: tutorial/03-maskrcnn.md
+      - Training: tutorial/04-training.md
+      - Evaluation and inference: tutorial/05-evaluation-and-inference.md
+  - 中文教程:
+      - 导航: tutorial/README.zh-CN.md
+      - 基础: tutorial/00-basics.zh-CN.md
+      - 环境: tutorial/01-environment.zh-CN.md
+      - 数据与实例: tutorial/02-data-and-instances.zh-CN.md
+      - Mask R-CNN: tutorial/03-maskrcnn.zh-CN.md
+      - 训练: tutorial/04-training.zh-CN.md
+      - 评估与推理: tutorial/05-evaluation-and-inference.zh-CN.md
+  - Concepts:
+      - Configuration flow: concepts/configuration-flow.md
+      - Instance target: concepts/instance-target.md
+      - Mask R-CNN flow: concepts/maskrcnn-flow.md
+      - Code tour: concepts/code-tour.md
+  - 中文概念:
+      - 配置流: concepts/configuration-flow.zh-CN.md
+      - Instance target: concepts/instance-target.zh-CN.md
+      - Mask R-CNN 流程: concepts/maskrcnn-flow.zh-CN.md
+      - 代码导览: concepts/code-tour.zh-CN.md
+  - Guides:
+      - Choosing models: guides/choosing-models.md
+      - Using models: guides/using-models.md
+      - Using your data: guides/using-your-data.md
+      - Experiments: guides/experiments.md
+      - Kaggle: guides/kaggle.md
+      - Troubleshooting: guides/troubleshooting.md
+      - Adding models: guides/adding-models.md
+      - Releasing: guides/releasing.md
+  - 中文指南:
+      - 模型选择: guides/choosing-models.zh-CN.md
+      - 使用模型: guides/using-models.zh-CN.md
+      - 使用自己的数据: guides/using-your-data.zh-CN.md
+      - 实验管理: guides/experiments.zh-CN.md
+      - Kaggle: guides/kaggle.zh-CN.md
+      - 故障排查: guides/troubleshooting.zh-CN.md
+      - 添加模型: guides/adding-models.zh-CN.md
+      - 发布: guides/releasing.zh-CN.md
+  - Reference:
+      - Configuration: reference/config-reference.md
+      - Dataset format: reference/dataset-format.md
+      - Metrics: reference/metrics.md
+      - Checkpoint schema: reference/checkpoint-schema.md
+      - CLI and outputs: reference/cli-and-outputs.md
+      - Model catalog: reference/model-zoo.md
+      - Penn-Fudan: reference/penn-fudan.md
+  - 中文参考:
+      - 配置: reference/config-reference.zh-CN.md
+      - 数据格式: reference/dataset-format.zh-CN.md
+      - 指标: reference/metrics.zh-CN.md
+      - Checkpoint: reference/checkpoint-schema.zh-CN.md
+      - CLI 与输出: reference/cli-and-outputs.zh-CN.md
+      - 模型清单: reference/model-zoo.zh-CN.md
+      - Penn-Fudan: reference/penn-fudan.zh-CN.md
+  - Architecture:
+      - Project specification: architecture/0001-instance-segmentation-lab.md
+      - Evaluation and splits: architecture/0002-evaluation-and-splits.md
+  - 中文架构:
+      - 项目规格: architecture/0001-instance-segmentation-lab.zh-CN.md
+      - 评估与划分: architecture/0002-evaluation-and-splits.zh-CN.md
+  - Recorded runs:
+      - Index: recorded-run/README.md
+      - Model card: recorded-run/MODEL_CARD.md
+      - Status: recorded-run/STATUS.md
+      - Legacy v1: recorded-run/legacy-v1/README.md
+      - Legacy v1 status: recorded-run/legacy-v1/STATUS.md
+  - 中文运行记录:
+      - 索引: recorded-run/README.zh-CN.md
+      - 模型卡: recorded-run/MODEL_CARD.zh-CN.md
+      - 状态: recorded-run/STATUS.zh-CN.md
+      - Legacy v1: recorded-run/legacy-v1/README.zh-CN.md
+      - Legacy v1 状态: recorded-run/legacy-v1/STATUS.zh-CN.md
+markdown_extensions:
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true

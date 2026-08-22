@@ -477,7 +477,7 @@ training:
 配置优先级固定为：
 
 ```text
-代码默认值 < YAML 文件 < --set key=value < 专用 CLI 参数
+代码默认值 < YAML 文件 < `--set KEY VALUE` < 专用 CLI 参数
 ```
 
 ### 7.2 CLI
@@ -491,10 +491,10 @@ instance-segment --version
 instance-segment list-models
 instance-segment list-datasets
 instance-segment show-config --config configs/learning_minimal.yaml
-instance-segment verify-data --config configs/learning_minimal.yaml
-instance-segment prepare-data --config configs/learning_minimal.yaml
+instance-segment verify-data
+instance-segment prepare-data
 instance-segment train --config configs/learning_minimal.yaml --dry-run
-instance-segment train --config configs/reference_maskrcnn.yaml --set run.name=my-run
+instance-segment train --config configs/reference_maskrcnn.yaml --set run.name my-run
 instance-segment evaluate --checkpoint artifacts/my-run/best.pt --split valid
 instance-segment evaluate --checkpoint artifacts/my-run/best.pt --split test --plot
 instance-segment predict --checkpoint artifacts/my-run/best.pt --image path/to/image.png --output artifacts/prediction

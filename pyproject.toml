@@ -42,9 +42,11 @@ dev = [
     "build>=1.2,<2",
     "twine>=5,<8",
     "matplotlib>=3.6,<4",
+    "mkdocs-material>=9.5,<10",
     "tomli>=2,<3; python_version < '3.11'",
 ]
 plot = ["matplotlib>=3.6,<4"]
+docs = ["mkdocs-material>=9.5,<10"]
 
 [project.urls]
 Homepage = "https://github.com/Doithoo/pytorch-instance-segmentation-lab"

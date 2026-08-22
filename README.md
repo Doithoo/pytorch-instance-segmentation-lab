@@ -11,12 +11,12 @@ Reproducible PyTorch instance-segmentation implementation with Penn-Fudan and CO
 ![Penn-Fudan dataset and instances](docs/recorded-run/assets/dataset-preview.png)
 
 ```text
-download/prepare -> verify -> inspect -> dry-run -> train -> evaluate -> compare/predict
+download -> prepare -> verify -> inspect -> dry-run -> train -> evaluate -> compare/predict
 ```
 
 ## Completed Kaggle Run
 
-Protocol-v2 training was executed on [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu), using a Tesla T4, the committed source-stratified manifests, and 20 training epochs. The run completed at `2026-08-22T12:19:00Z`.
+Protocol-v2 training was executed on [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu), using a Tesla T4, the committed source-stratified manifests, and 20 training epochs.
 
 | Metric | Result |
 |---|---:|
@@ -39,7 +39,38 @@ The repository provides:
 - Training, validation selection, post-selection test evaluation, checkpoint resume, and single-image inference.
 - Machine-readable metrics, per-image error reports, ranked worst-case overlays, and run provenance.
 
-## Local Reproduction
+## Fresh-Clone Path
+
+Python 3.10-3.12 and [uv](https://docs.astral.sh/uv/) are required. From the repository root:
+
+```bash
+git clone https://github.com/Doithoo/pytorch-instance-segmentation-lab.git
+cd pytorch-instance-segmentation-lab
+uv sync --locked --extra dev
+uv run instance-segment doctor --device auto
+uv run python scripts/download_data.py --data-dir data/raw --manifest-dir data/manifests
+uv run instance-segment prepare-data
+uv run instance-segment verify-data
+uv run instance-segment inspect-data --split train
+uv run python scripts/preview_dataset.py --output artifacts/dataset-preview.png
+uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
+```
+
+The dry-run performs one real optimizer update and writes no run directory. Continue with [the tutorial](docs/tutorial/README.md) for a small training run, evaluation, and prediction. Local CUDA is optional; use the [Kaggle guide](docs/guides/kaggle.md) for the full GPU reproduction.
+
+## Documentation
+
+Use the [documentation index](docs/README.md) to choose a path:
+
+- [Tutorial](docs/tutorial/README.md): basics, environment, data, Mask R-CNN, training, evaluation, and inference.
+- [Concepts](docs/concepts/code-tour.md): target, model, configuration, and code-flow explanations.
+- [Guides](docs/guides/choosing-models.md): model choice, custom data/models, experiments, Kaggle, troubleshooting, and release.
+- [Reference](docs/reference/cli-and-outputs.md): CLI commands, artifact layout, config, data, metrics, checkpoints, and models.
+- [Recorded run](docs/recorded-run/README.md): auditable protocol-v2 evidence and model card.
+
+The same pages can be published with [`mkdocs.yml`](mkdocs.yml). English and Chinese pages are kept in filename pairs and are checked by the documentation tests.
+
+## Development
 
 ```bash
 uv sync --locked --extra dev

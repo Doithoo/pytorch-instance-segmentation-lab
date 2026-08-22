@@ -5,54 +5,130 @@ import hashlib
 import json
 import re
 import runpy
+import shlex
 from pathlib import Path
+from urllib.parse import unquote
 
 import pytest
 import yaml
 
-REQUIRED_PATHS = (
-    "README.md",
-    "README.zh-CN.md",
-    "docs/guides/kaggle.md",
-    "docs/guides/kaggle.zh-CN.md",
-    "docs/reference/dataset-format.md",
-    "docs/architecture/0002-evaluation-and-splits.md",
-    "docs/reference/checkpoint-schema.md",
-    "docs/tutorial/05-evaluation-and-inference.md",
-    "docs/recorded-run/kaggle/kernel-metadata.json",
-    "docs/recorded-run/kaggle/run_kaggle.py",
-    "docs/recorded-run/kaggle/run_kaggle-v2.py",
-    "docs/recorded-run/MODEL_CARD.md",
-    "docs/recorded-run/legacy-v1/README.md",
-    "configs/reference_maskrcnn.yaml",
-    "configs/maskrcnn_mobilenet_v3_large.yaml",
-    "examples/05_checkpoint_prediction.py",
-)
+from instance_segmenter.cli import build_parser
+from instance_segmenter.models.registry import list_models
+
+ROOT = Path(__file__).parents[1]
+PUBLICATION_ROOTS = [ROOT / name for name in ("docs", "configs", "examples", "scripts", "tests", "src")]
+ROOT_PAIRS = ("README", "CONTRIBUTING")
+WORKFLOW = "download -> prepare -> verify -> inspect -> dry-run -> train -> evaluate -> compare/predict"
+WORKFLOW_ZH = "下载 -> 准备 -> 校验 -> 检查 -> dry-run -> 训练 -> 评估 -> 对比/推理"
 
 
-def test_documented_project_paths_exist() -> None:
-    root = Path(__file__).resolve().parents[1]
-    assert all((root / path).is_file() for path in REQUIRED_PATHS)
+def _publication_pages() -> list[Path]:
+    pages = [ROOT / "README.md", ROOT / "README.zh-CN.md", ROOT / "CONTRIBUTING.md", ROOT / "CONTRIBUTING.zh-CN.md"]
+    for directory in PUBLICATION_ROOTS:
+        pages.extend(directory.rglob("*.md"))
+    return sorted(set(pages))
 
 
-def test_relative_markdown_links_resolve() -> None:
-    root = Path(__file__).resolve().parents[1]
-    markdown_files = [root / "README.md", root / "README.zh-CN.md", *sorted((root / "docs").rglob("*.md"))]
-    broken: list[str] = []
-    for source in markdown_files:
-        text = source.read_text(encoding="utf-8")
-        for raw_target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", text):
-            target = raw_target.split("#", 1)[0]
-            if not target or "://" in target or target.startswith("mailto:"):
+def _broken_local_links(pages: list[Path]) -> list[str]:
+    missing = []
+    for source in pages:
+        for raw_target in re.findall(r"!?\[[^]]*]\(([^)]+)\)", source.read_text(encoding="utf-8")):
+            target = unquote(raw_target.split()[0]).split("#", 1)[0]
+            if not target or target.startswith(("http://", "https://", "mailto:")):
                 continue
             if not (source.parent / target).resolve().exists():
-                broken.append(f"{source.relative_to(root)} -> {target}")
-    assert not broken, "broken Markdown links:\n" + "\n".join(broken)
+                missing.append(f"{source.relative_to(ROOT)} -> {target}")
+    return missing
+
+
+def test_english_and_chinese_pages_exist_in_pairs() -> None:
+    missing = []
+    for stem in ROOT_PAIRS:
+        for path in (ROOT / f"{stem}.md", ROOT / f"{stem}.zh-CN.md"):
+            if not path.is_file():
+                missing.append(path.relative_to(ROOT).as_posix())
+    for directory in PUBLICATION_ROOTS:
+        for chinese in directory.rglob("*.zh-CN.md"):
+            english = chinese.with_name(chinese.name.replace(".zh-CN.md", ".md"))
+            if not english.is_file():
+                missing.append(english.relative_to(ROOT).as_posix())
+        for english in directory.rglob("*.md"):
+            if english.name.endswith(".zh-CN.md"):
+                continue
+            chinese = english.with_name(english.name.removesuffix(".md") + ".zh-CN.md")
+            if not chinese.is_file():
+                missing.append(chinese.relative_to(ROOT).as_posix())
+    assert not missing, "missing language page(s):\n" + "\n".join(sorted(set(missing)))
+
+
+def test_all_local_markdown_links_resolve() -> None:
+    missing = _broken_local_links(_publication_pages())
+    assert not missing, "broken local links:\n" + "\n".join(missing)
+
+
+def test_readmes_publish_workflow_and_recorded_metric() -> None:
+    for path in (ROOT / "README.md", ROOT / "README.zh-CN.md"):
+        content = path.read_text(encoding="utf-8")
+        assert (WORKFLOW_ZH if path.name.endswith(".zh-CN.md") else WORKFLOW) in content
+        assert "0.756093" in content
+        assert "docs/recorded-run/" in content
+        assert "prepare-data --data-dir" not in content
+
+
+def test_recorded_run_index_is_current() -> None:
+    for path in (ROOT / "docs/recorded-run/README.md", ROOT / "docs/recorded-run/README.zh-CN.md"):
+        content = path.read_text(encoding="utf-8")
+        assert "0.756093" in content
+        assert "does not yet" not in content
+        assert "目前不声明" not in content
+
+
+def test_documented_cli_lines_use_real_parser_options() -> None:
+    parser = build_parser()
+    failures = []
+    for source in _publication_pages():
+        for line in source.read_text(encoding="utf-8").splitlines():
+            command = line.strip()
+            if command.endswith("\\"):
+                continue
+            if command.startswith("uv run instance-segment "):
+                command = command.removeprefix("uv run ")
+            elif not command.startswith("instance-segment "):
+                continue
+            try:
+                parser.parse_args(shlex.split(command)[1:])
+            except SystemExit as exc:
+                if exc.code != 0:
+                    failures.append(f"{source.relative_to(ROOT)}: {command}")
+    assert not failures, "invalid documented CLI command(s):\n" + "\n".join(failures)
+
+
+def test_documented_python_entry_points_and_configs_exist() -> None:
+    missing = []
+    for source in _publication_pages():
+        content = source.read_text(encoding="utf-8")
+        for target in re.findall(r"uv run(?: --extra \w+)? python\s+((?:scripts|examples)/[^\s`\\]+)", content):
+            if "<" in target or target == "...":
+                continue
+            if not (ROOT / target).is_file():
+                missing.append(f"{source.relative_to(ROOT)} -> {target}")
+        for target in re.findall(r"--config\s+([^\s`\\]+)", content):
+            if target == "PATH" or "<" in target or not target.startswith(("configs/", "data/", "artifacts/")):
+                continue
+            if not (ROOT / target).is_file():
+                missing.append(f"{source.relative_to(ROOT)} -> {target}")
+    assert not missing, "missing documented path(s):\n" + "\n".join(missing)
+
+
+def test_model_catalog_lists_every_registered_model() -> None:
+    for suffix in ("", ".zh-CN"):
+        content = (ROOT / f"docs/reference/model-zoo{suffix}.md").read_text(encoding="utf-8")
+        documented = {name for name in list_models() if re.search(rf"\|\s*`{re.escape(name)}`\s*\|", content)}
+        assert documented == set(list_models())
 
 
 def test_protocol_v2_recorded_run_is_internally_consistent() -> None:
-    root = Path(__file__).resolve().parents[1]
-    recorded = root / "docs" / "recorded-run"
+    recorded = ROOT / "docs" / "recorded-run"
     summary = json.loads((recorded / "kaggle-run-summary.json").read_text(encoding="utf-8"))
     evaluation = json.loads((recorded / "evaluation" / "evaluation.json").read_text(encoding="utf-8"))
     run = yaml.safe_load((recorded / "run.yaml").read_text(encoding="utf-8"))
@@ -73,13 +149,3 @@ def test_protocol_v2_recorded_run_is_internally_consistent() -> None:
     assert hashlib.sha256(submitted_path.read_bytes()).hexdigest() == run["submitted_runner_sha256"]
     assert submitted["PROJECT_ARCHIVE_SHA256"] == summary["source_archive_sha256"]
     assert submitted["PROJECT_ARCHIVE_BYTES"] == summary["source_archive_bytes"]
-
-
-def test_readme_describes_protocol_v2_and_legacy_baseline() -> None:
-    root = Path(__file__).resolve().parents[1]
-    readme = (root / "README.md").read_text(encoding="utf-8")
-    assert "20 training epochs" in readme
-    assert "136/17/17" in readme
-    assert "protocol v2" in readme
-    assert "legacy-v1" in readme
-    assert "0.756093" in readme

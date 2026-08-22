@@ -11,12 +11,12 @@
 ![Penn-Fudan 数据与实例](docs/recorded-run/assets/dataset-preview.png)
 
 ```text
-下载/准备 -> 校验 -> 检查 -> dry-run -> 训练 -> 评估 -> 对比/推理
+下载 -> 准备 -> 校验 -> 检查 -> dry-run -> 训练 -> 评估 -> 对比/推理
 ```
 
 ## Kaggle 已完成运行
 
-协议 v2 已在 [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) 的 Tesla T4 上实际执行，使用仓库提交的按来源分层 manifests 和 20 个训练 epoch。运行完成时间为 `2026-08-22T12:19:00Z`。
+协议 v2 已在 [Kaggle kernel version 2](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu) 的 Tesla T4 上实际执行，使用仓库提交的按来源分层 manifests 和 20 个训练 epoch。
 
 | 指标 | 结果 |
 |---|---:|
@@ -39,7 +39,38 @@
 - 训练、验证集选模、选模后的 test 评估、checkpoint 恢复和单图推理。
 - 机器可读指标、逐图错误报告、排序后的最差样本图和运行 provenance。
 
-## 本地复现
+## 从全新克隆开始
+
+需要 Python 3.10-3.12 和 [uv](https://docs.astral.sh/uv/)。以下命令从仓库根目录执行：
+
+```bash
+git clone https://github.com/Doithoo/pytorch-instance-segmentation-lab.git
+cd pytorch-instance-segmentation-lab
+uv sync --locked --extra dev
+uv run instance-segment doctor --device auto
+uv run python scripts/download_data.py --data-dir data/raw --manifest-dir data/manifests
+uv run instance-segment prepare-data
+uv run instance-segment verify-data
+uv run instance-segment inspect-data --split train
+uv run python scripts/preview_dataset.py --output artifacts/dataset-preview.png
+uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
+```
+
+dry-run 会执行一次真实 optimizer update，但不写运行目录。接着阅读[教程](docs/tutorial/README.zh-CN.md)完成小规模训练、评估和预测。本地 CUDA 不是必需条件；完整 GPU 复现请使用 [Kaggle 指南](docs/guides/kaggle.zh-CN.md)。
+
+## 文档
+
+从[文档导航](docs/README.zh-CN.md)按目标进入：
+
+- [教程](docs/tutorial/README.zh-CN.md)：基础、环境、数据、Mask R-CNN、训练、评估与推理。
+- [概念](docs/concepts/code-tour.zh-CN.md)：target、模型、配置和代码流说明。
+- [指南](docs/guides/choosing-models.zh-CN.md)：模型选择、自定义数据/模型、实验、Kaggle、排错和发布。
+- [参考](docs/reference/cli-and-outputs.zh-CN.md)：CLI 命令、产物目录、配置、数据、指标、checkpoint 和模型。
+- [训练记录](docs/recorded-run/README.zh-CN.md)：可审计的协议 v2 证据和模型卡。
+
+可以使用 [`mkdocs.yml`](mkdocs.yml) 发布同一组页面。英文和中文页面按文件名成对维护，并由文档测试自动检查。
+
+## 开发
 
 ```bash
 uv sync --locked --extra dev

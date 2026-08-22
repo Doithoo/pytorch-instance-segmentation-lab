@@ -2,9 +2,11 @@
 
 > **Superseded:** this run filtered predictions at score `0.5` before AP calculation and used the old lexicographic split. Its values are historical, not protocol-v2 benchmark metrics. See [ADR 0002](../../architecture/0002-evaluation-and-splits.md).
 
-[Chinese](README.zh-CN.md) | [Kaggle workflow](../../guides/kaggle.md) | [Reference config](../../../configs/reference_maskrcnn.yaml)
+[Chinese](README.zh-CN.md) | [Kaggle workflow](../../guides/kaggle.md) | [Reference config](https://github.com/Doithoo/pytorch-instance-segmentation-lab/blob/main/configs/reference_maskrcnn.yaml)
 
 The original 20-epoch run completed successfully on a Kaggle Tesla T4 at [this kernel](https://www.kaggle.com/code/yashowhoo/pytorch-instance-segmentation-lab-penn-fudan-gpu). It proved the end-to-end GPU workflow, checkpoint selection, and artifact capture. The numeric results below use protocol v1 and must not be compared with standard unfiltered COCO AP.
+
+The reference configuration is maintained in the [repository config directory](https://github.com/Doithoo/pytorch-instance-segmentation-lab/blob/main/configs/reference_maskrcnn.yaml).
 
 | Legacy protocol-v1 item | Historical result |
 |---|---:|
@@ -25,7 +27,7 @@ The original 20-epoch run completed successfully on a Kaggle Tesla T4 at [this k
 - [`metrics.csv`](metrics.csv): all 20 train/validation epochs.
 - [`kaggle-run-summary.json`](kaggle-run-summary.json): unrounded final values from the runner.
 - [`evaluation/evaluation.json`](evaluation/evaluation.json), [`per_class.csv`](evaluation/per_class.csv), and [`per_image.csv`](evaluation/per_image.csv): final test result.
-- [`evaluation/visualizations/`](evaluation/visualizations/): four test-image ground-truth/prediction pairs.
+- [`evaluation/visualizations/`](evaluation/visualizations/4550134779599368474-ground-truth.png): four test-image ground-truth/prediction pairs.
 - [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py): exact generated runner submitted for this recorded version; its embedded archive SHA-256 is `c96eef...71d91`.
 - [`../kaggle/run_kaggle.py`](../kaggle/run_kaggle.py): current generated runner for future submissions.
 
