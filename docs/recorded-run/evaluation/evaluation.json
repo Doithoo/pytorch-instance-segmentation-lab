@@ -1,0 +1,23 @@
+{
+  "class_names": {
+    "0": "background",
+    "1": "person"
+  },
+  "image_count": 17,
+  "mask_threshold": 0.5,
+  "metric_backend": "torchmetrics.MeanAveragePrecision with pycocotools",
+  "metrics": {
+    "bbox_map": 0.8915790915489197,
+    "bbox_map_50": 1.0,
+    "bbox_map_75": 1.0,
+    "bbox_mar_100": 0.9114285707473755,
+    "mask_map": 0.791271448135376,
+    "mask_map_50": 1.0,
+    "mask_map_75": 0.9660537242889404,
+    "mask_mar_100": 0.8114285469055176
+  },
+  "prediction_count": 37,
+  "score_threshold": 0.5,
+  "split": "test",
+  "target_count": 35
+}

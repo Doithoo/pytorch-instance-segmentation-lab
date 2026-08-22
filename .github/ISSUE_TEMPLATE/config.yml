@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/Doithoo/pytorch-instance-segmentation-lab#readme
+    about: Read the learning path and troubleshooting guide first.

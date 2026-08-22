@@ -1,0 +1,35 @@
+dataset_name: pennfudan
+dataset_root: PennFudanPed
+label_schema:
+  classes:
+  - id: 0
+    name: background
+    color:
+    - 32
+    - 32
+    - 32
+  - id: 1
+    name: person
+    color:
+    - 36
+    - 180
+    - 99
+  ignore_index: 255
+split_counts:
+  train: 136
+  valid: 17
+  test: 17
+split_hashes:
+  train: 875f24b8d1e01669c9419352b16ea9d5ccaf3bc08814ed0f31757f9cb80ec547
+  valid: 8700e0f47f72bd4aa875d924fc5aa6431b798f27131a27941ca029fb310c7463
+  test: e9398a9b09b5a27a8c0ce9b6bae1ec820103cbcd04056343d4c58a040a664af9
+identity: a9c1ea7e47ad9df640f7df33c7ebf617da027cce3c1b847fd406797a813b4b99
+image_width_range:
+- 253
+- 1017
+image_height_range:
+- 311
+- 581
+instance_count_range:
+- 1
+- 8

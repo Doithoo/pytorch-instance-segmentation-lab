@@ -1,0 +1,14 @@
+run:
+  name: custom-model
+  output_dir: artifacts
+data:
+  provider: pennfudan
+  root: data/raw
+  manifest_dir: data/manifests
+model:
+  name: maskrcnn_resnet50_fpn
+  factory: examples.extensions.my_segmenter:build_model
+  weights: none
+  num_classes: 2
+training:
+  epochs: 2

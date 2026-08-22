@@ -1,0 +1,9 @@
+name: Learning question
+description: Ask about a documented concept or workflow.
+labels: [question]
+body:
+  - type: textarea
+    attributes:
+      label: Question
+    validations:
+      required: true

@@ -1,0 +1,14 @@
+run:
+  name: custom-dataset
+  output_dir: artifacts
+data:
+  provider: pennfudan
+  factory: examples.extensions.my_dataset:build_dataset
+  root: data/raw
+  manifest_dir: data/manifests
+model:
+  name: maskrcnn_resnet50_fpn
+  weights: none
+  num_classes: 2
+training:
+  epochs: 2
