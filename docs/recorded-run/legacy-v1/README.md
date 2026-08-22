@@ -28,7 +28,7 @@ The reference configuration is maintained in the [repository config directory](h
 - [`kaggle-run-summary.json`](kaggle-run-summary.json): unrounded final values from the runner.
 - [`evaluation/evaluation.json`](evaluation/evaluation.json), [`per_class.csv`](evaluation/per_class.csv), and [`per_image.csv`](evaluation/per_image.csv): final test result.
 - [`evaluation/visualizations/`](evaluation/visualizations/4550134779599368474-ground-truth.png): four test-image ground-truth/prediction pairs.
-- [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py): exact generated runner submitted for this recorded version; its embedded archive SHA-256 is `c96eef...71d91`.
+- [`kaggle/run_kaggle-v1.py`](../kaggle/run_kaggle-v1.py): exact generated runner submitted for this recorded version; its embedded archive SHA-256 is `c96eef...71d91`.
 - [`../kaggle/run_kaggle.py`](../kaggle/run_kaggle.py): current generated runner for future submissions.
 
 The 335 MB `best.pt` and `last.pt`, raw data, and complete prediction cache are intentionally not committed. Download them from the Kaggle kernel output. The evaluated `best.pt` SHA-256 is `af68b78d28b7b063e6932adc307a4db5f61f506409e88b9871447d45893bee6b`.

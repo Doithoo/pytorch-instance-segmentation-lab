@@ -70,19 +70,6 @@ Use the [documentation index](docs/README.md) to choose a path:
 
 The same pages can be published with [`mkdocs.yml`](mkdocs.yml). English and Chinese pages are kept in filename pairs and are checked by the documentation tests.
 
-## Development
-
-```bash
-uv sync --locked --extra dev
-uv run instance-segment doctor --device auto
-uv run python scripts/download_data.py --data-dir data/raw --manifest-dir data/manifests
-uv run instance-segment prepare-data
-uv run instance-segment verify-data
-uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
-```
-
-The full GPU reproduction uses the [Kaggle runner](docs/guides/kaggle.md). The exact submitted protocol-v2 runner is [run_kaggle-v2.py](docs/recorded-run/kaggle/run_kaggle-v2.py).
-
 ## Commands
 
 - `instance-segment init-config --list`: list installed configuration templates.

@@ -70,19 +70,6 @@ dry-run 会执行一次真实 optimizer update，但不写运行目录。接着�
 
 可以使用 [`mkdocs.yml`](mkdocs.yml) 发布同一组页面。英文和中文页面按文件名成对维护，并由文档测试自动检查。
 
-## 开发
-
-```bash
-uv sync --locked --extra dev
-uv run instance-segment doctor --device auto
-uv run python scripts/download_data.py --data-dir data/raw --manifest-dir data/manifests
-uv run instance-segment prepare-data
-uv run instance-segment verify-data
-uv run instance-segment train --config configs/learning_minimal.yaml --dry-run --device cpu
-```
-
-完整 GPU 复现使用 [Kaggle runner](docs/guides/kaggle.zh-CN.md)。本次协议 v2 的精确提交 runner 是 [run_kaggle-v2.py](docs/recorded-run/kaggle/run_kaggle-v2.py)。
-
 ## 命令
 
 - `instance-segment init-config --list`：列出已安装的配置模板。

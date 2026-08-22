@@ -26,7 +26,7 @@
 - [`kaggle-run-summary.json`](kaggle-run-summary.json)：runner 写入的未舍入最终数值。
 - [`evaluation/evaluation.json`](evaluation/evaluation.json)、[`per_class.csv`](evaluation/per_class.csv)、[`per_image.csv`](evaluation/per_image.csv)：最终 test 结果。
 - [`evaluation/visualizations/`](evaluation/visualizations/4550134779599368474-ground-truth.png)：4 组 test 图片标注/预测对照。
-- [`kaggle/run_kaggle-v1.py`](kaggle/run_kaggle-v1.py)：本次记录实际提交的生成 runner，内嵌 archive SHA-256 为 `c96eef...71d91`。
+- [`kaggle/run_kaggle-v1.py`](../kaggle/run_kaggle-v1.py)：本次记录实际提交的生成 runner，内嵌 archive SHA-256 为 `c96eef...71d91`。
 - [`../kaggle/run_kaggle.py`](../kaggle/run_kaggle.py)：未来提交使用的当前生成 runner。
 
 335 MB 的 `best.pt`、`last.pt`、原始数据和完整 prediction cache 不进入仓库，应从 Kaggle kernel output 下载。被评估的 `best.pt` SHA-256 为 `af68b78d28b7b063e6932adc307a4db5f61f506409e88b9871447d45893bee6b`。
