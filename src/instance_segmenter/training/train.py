@@ -12,7 +12,7 @@ import subprocess
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -362,7 +362,7 @@ def _sha256(path: Path) -> str:
 
 
 def _append_run_event(run_dir: Path, event: str, **details: object) -> None:
-    payload = {"timestamp_utc": datetime.now(UTC).isoformat(), "event": event, **details}
+    payload = {"timestamp_utc": datetime.now(timezone.utc).isoformat(), "event": event, **details}
     with (run_dir / "events.jsonl").open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
 

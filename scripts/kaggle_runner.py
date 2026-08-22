@@ -14,7 +14,7 @@ import traceback
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -318,7 +318,7 @@ def _write_success_summary(
     run_dir = result.run_dir
     summary = {
         "status": "complete",
-        "completed_at_utc": datetime.now(UTC).isoformat(),
+        "completed_at_utc": datetime.now(timezone.utc).isoformat(),
         "python_version": sys.version,
         "torch_version": torch.__version__,
         "torchvision_version": torchvision.__version__,
